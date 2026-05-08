@@ -194,3 +194,59 @@ Response struktúra
 Minden POST endpoint ugyanolyan választ ad vissza:
 json{ "id": 1, "ervenyes": 1, "hiba_uzenet": null }
 ervenyeshiba_uzenetJelentés1nullSikeres, valid adat0"HIBA: ..."Trigger megakadályozta1"FIGYELMEZTETÉS: ..."Bekerült, de készlethiány van
+
+Day 6 Morning
+dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
+Triggerek újraírva – mindhárom trigger átírva hogy a dim_keszlet-et frissítse:
+
+bevet → forrás tartály + bejovo_liter
+kiadas → tartály - kiadott_liter
+mozgas → forrás - mozgatott_liter, cél + mozgatott_liter
+
+2% tolerancia – kapacitás ellenőrzésnél:
+
+0% - 2% között → FIGYELMEZTETÉS, készlet frissül
+2% felett → HIBA, készlet nem frissül
+
+Pisztoly óraállás átrakva fact_keszlet_mozgas → fact_keszlet_kiadas-ba, mert ott keletkezik az adat.
+GitHub – private repo létrehozva, projekt feltöltve.
+dotenv – database.py átírva, jelszó .env fájlba kerül, .gitignore beállítva.
+
+
+Day 6 Afternoon – React Frontend
+Telepítés
+Node.js – szükséges előfeltétel:
+https://nodejs.org/en  (LTS verzió)
+React app létrehozása:
+cmdcd /d C:\projektek\debarro
+npx create-react-app debarro-frontend
+cd debarro-frontend
+npm start
+Szerver indítása
+Két CMD ablak szükséges egyszerre:
+1. FastAPI:
+cmdcd /d C:\projektek\debarro\DEBARRO-PYTHON
+uvicorn main:app --reload
+2. React:
+cmdcd /d C:\projektek\debarro\debarro-frontend
+npm start
+SzerverURLReact frontendhttp://localhost:3000FastAPI backendhttp://localhost:8000API docshttp://localhost:8000/docs
+CORS beállítás
+A main.py-ban szükséges a React–FastAPI kommunikációhoz:
+pythonfrom fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+dotenv javítás
+A database.py-ban explicit meg kell adni a fájlnevet:
+pythonload_dotenv("validate.env")
+Első form – Készlet Bevételezés
+src/App.js – React form amely:
+
+Lekéri a dim táblákat dropdown-okhoz (/tartaly, /alkalmazott, /cegek)
+POST /keszlet-bevet endpointot hívja
+Sikeres rögzítésnél zöld, hibánál piros visszajelzést ad
