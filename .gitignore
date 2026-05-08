@@ -1,0 +1,4 @@
+DEBARRO-PYTHON/validate.env
+DEBARRO-PYTHON/__pycache__/
+**/*.pyc
+**/*.pyc
