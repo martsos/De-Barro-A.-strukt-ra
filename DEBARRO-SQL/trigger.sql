@@ -19,7 +19,7 @@ BEGIN
        AND NEW.gepuzemora_eloz > NEW.gepuzemora_akt THEN
         SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            'HIBA: Gépüzemóra aktuális kisebb mint előző');
+            'HIBA: GEPUZEMORA AKTUALIS KISEBB MINT AZ ELOZO');
     END IF;
 
     IF NEW.km_eloz IS NOT NULL 
@@ -27,7 +27,7 @@ BEGIN
        AND NEW.km_eloz > NEW.km_akt THEN
         SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            'HIBA: KM aktuális kisebb mint előző');
+            'HIBA: KM AKTUALIS KISEBB MINT AZ ELOZO');
     END IF;
 
     -- 2. ESZKÖZ SZINTŰ KM
@@ -44,7 +44,7 @@ BEGIN
         SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
             CONCAT('HIBA: KM (', NEW.km_akt,
-                   ') < utolsó (', utolso_km, ')'));
+                   ') < UTOLSO (', utolso_km, ')'));
     END IF;
 
     -- 3. PISZTOLY ÓRAÁLLÁS
@@ -61,9 +61,9 @@ BEGIN
         IF ABS((NEW.pisztoly_oraallas - utolso_pisztoly) - NEW.kiadott_liter) > 0.5 THEN
             SET NEW.ervenyes = FALSE;
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('HIBA: Pisztoly eltérés (',
+                CONCAT('HIBA: PISZTOLY ELTERES (',
                        NEW.pisztoly_oraallas - utolso_pisztoly,
-                       ') != kiadott (', NEW.kiadott_liter, ')'));
+                       ') != KIADOTT (', NEW.kiadott_liter, ')'));
         END IF;
     END IF;
 
@@ -75,7 +75,7 @@ BEGIN
     IF defense_limit IS NOT NULL 
        AND NEW.kiadott_liter > defense_limit THEN
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            CONCAT('FIGYELMEZTETÉS: Készlet negatív (',
+            CONCAT('FIGYELMEZTETES: KESZLET NEGATIV(',
                    defense_limit - NEW.kiadott_liter, ')'));
     END IF;
 
@@ -116,11 +116,11 @@ BEGIN
         IF NEW.mozgatott_liter > defense_forras_limit * 1.02 THEN
             SET NEW.ervenyes = FALSE;
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('HIBA: Nincs elég készlet! Elérhető(',
+                CONCAT('HIBA: NINCS ELEG KESZLET! Elerheto(',
                        defense_forras_limit, ') < mozgatott(', NEW.mozgatott_liter, ')'));
         ELSEIF NEW.mozgatott_liter > defense_forras_limit THEN
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('FIGYELMEZTETÉS: Készlet negatív(',
+                CONCAT('FIGYELMEZTETES: KESZLET NEGATIV(',
                        defense_forras_limit - NEW.mozgatott_liter, ')'));
         END IF;
     END IF;
@@ -139,12 +139,12 @@ BEGIN
         IF cel_aktualis + NEW.mozgatott_liter > cel_max_kapacitas * 1.02 THEN
             SET NEW.ervenyes = FALSE;
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('HIBA: Cél tartály kapacitás túllépés! Aktuális(',
+                CONCAT('HIBA: CEL TARTALY KAPACITAS TULLEPES! Aktualis(',
                        cel_aktualis, ') + mozgatott(', NEW.mozgatott_liter,
                        ') > max(', cel_max_kapacitas, ')'));
         ELSEIF cel_aktualis + NEW.mozgatott_liter > cel_max_kapacitas THEN
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('FIGYELMEZTETÉS: Cél tartály kapacitás közel! Aktuális(',
+                CONCAT('FIGYELMEZTETES: CEL TARTALY KAPACITAS KOZEL! Aktualis(',
                        cel_aktualis, ') + mozgatott(', NEW.mozgatott_liter,
                        ') > max(', cel_max_kapacitas, ')'));
         END IF;
@@ -162,7 +162,7 @@ BEGIN
        AND forras_anyag <> cel_anyag THEN
         SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            'HIBA: Anyag eltérés');
+            'HIBA: ANYAG ELTERES');
     END IF;
 
     -- 4. KÉSZLET FRISSÍTÉS
@@ -199,8 +199,8 @@ BEGIN
     IF ABS((NEW.zaro_liter - NEW.kezdo_liter) - NEW.bejovo_liter) > 0.5 THEN
         SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            CONCAT('HIBA: záró(', NEW.zaro_liter, ') - kezdő(',
-                   NEW.kezdo_liter, ') != bevételezett(', NEW.bejovo_liter, ')'));
+            CONCAT('HIBA: ZARO(', NEW.zaro_liter, ') - KEZDO(',
+                   NEW.kezdo_liter, ') != BEVETELEZETT(', NEW.bejovo_liter, ')'));
     END IF;
 
     -- 2. KAPACITÁS
@@ -216,12 +216,12 @@ BEGIN
         IF NEW.zaro_liter > max_kapacitas * 1.02 THEN
             SET NEW.ervenyes = FALSE;
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('HIBA: záró(', NEW.zaro_liter,
-                       ') > kapacitás(', max_kapacitas, ')'));
+                CONCAT('HIBA: ZARO(', NEW.zaro_liter,
+                       ') > kapacitas(', max_kapacitas, ')'));
         ELSEIF NEW.zaro_liter > max_kapacitas THEN
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('FIGYELMEZTETÉS: záró(', NEW.zaro_liter,
-                       ') közel kapacitáshoz(', max_kapacitas, ')'));
+                CONCAT('FIGYELMEZTETES: ZARO(', NEW.zaro_liter,
+                       ') kozel a kapacitashoz(', max_kapacitas, ')'));
         END IF;
     END IF;
 
@@ -230,13 +230,13 @@ BEGIN
         IF aktualis + NEW.bejovo_liter > max_kapacitas * 1.02 THEN
             SET NEW.ervenyes = FALSE;
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('HIBA: Kapacitás túllépés! Aktuális(',
-                       aktualis, ') + bejövő(', NEW.bejovo_liter,
+                CONCAT('HIBA: KAPACITAS TULLEPES! Aktualis(',
+                       aktualis, ') + bejovo(', NEW.bejovo_liter,
                        ') > max(', max_kapacitas, ')'));
         ELSEIF aktualis + NEW.bejovo_liter > max_kapacitas THEN
             SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-                CONCAT('FIGYELMEZTETÉS: Kapacitás közel! Aktuális(',
-                       aktualis, ') + bejövő(', NEW.bejovo_liter,
+                CONCAT('FIGYELMEZTETES: KAPACITAS KOZEL! Aktualis(',
+                       aktualis, ') + bejovo(', NEW.bejovo_liter,
                        ') > max(', max_kapacitas, ')'));
         END IF;
     END IF;

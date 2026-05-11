@@ -57,7 +57,7 @@ Python FastAPI alapok + HTML form prototípus
 
 
 Stack
-MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench
+MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
 
 
 DAY 3
@@ -87,6 +87,7 @@ vw_napi_kiadasok – napi aggregált kiadások tartály és anyag bontásban.
 vw_hibas_rekordok – mind 3 fact táblából egységes formátumban listázza a flagelt rekordokat. Ez lesz az audit dashboard alapja.
 vw_bevet_szallitokent – szállítónkénti bevételek súlyozott átlagárral. Division by zero védett.
 
+MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
 
 DAY 4
 
@@ -102,6 +103,8 @@ A --reload flag fejlesztés közben automatikusan újraindítja a szervert kódv
 A database.py nem fut önállóan – az endpointok importálják szükség szerint. 
 A jelszót és kapcsolati adatokat ebben a fájlban kell karbantartani átköltöztetéskor.
 Következő fázis: dim táblák SELECT endpointjai a frontend dropdownokhoz, majd fact táblák INSERT endpointjai a három beviteli formhoz.
+
+ New stack function Fast API connector
 
 DAY 5
 
@@ -195,6 +198,8 @@ Minden POST endpoint ugyanolyan választ ad vissza:
 json{ "id": 1, "ervenyes": 1, "hiba_uzenet": null }
 ervenyeshiba_uzenetJelentés1nullSikeres, valid adat0"HIBA: ..."Trigger megakadályozta1"FIGYELMEZTETÉS: ..."Bekerült, de készlethiány van
 
+Top used stack function  · SQL (MySQL Trigger overview/write)
+
 Day 6 Morning
 dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
 Triggerek újraírva – mindhárom trigger átírva hogy a dim_keszlet-et frissítse:
@@ -212,6 +217,7 @@ Pisztoly óraállás átrakva fact_keszlet_mozgas → fact_keszlet_kiadas-ba, me
 GitHub – private repo létrehozva, projekt feltöltve.
 dotenv – database.py átírva, jelszó .env fájlba kerül, .gitignore beállítva.
 
+New stack option GitBash for Github push + verzió követés. Dotenv for database config
 
 Day 6 Afternoon – React Frontend
 Telepítés
@@ -225,10 +231,10 @@ npm start
 Szerver indítása
 Két CMD ablak szükséges egyszerre:
 1. FastAPI:
-cmdcd /d C:\projektek\debarro\DEBARRO-PYTHON
+cd /d C:\projektek\debarro\DEBARRO-PYTHON
 uvicorn main:app --reload
 2. React:
-cmdcd /d C:\projektek\debarro\debarro-frontend
+cd /d C:\projektek\debarro\debarro-frontend
 npm start
 SzerverURLReact frontendhttp://localhost:3000FastAPI backendhttp://localhost:8000API docshttp://localhost:8000/docs
 CORS beállítás
@@ -250,3 +256,7 @@ src/App.js – React form amely:
 Lekéri a dim táblákat dropdown-okhoz (/tartaly, /alkalmazott, /cegek)
 POST /keszlet-bevet endpointot hívja
 Sikeres rögzítésnél zöld, hibánál piros visszajelzést ad
+
+
+New tool --> · REACT for frontend · Node.js (Must have)
+

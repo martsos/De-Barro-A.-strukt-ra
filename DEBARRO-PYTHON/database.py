@@ -5,9 +5,16 @@ from dotenv import load_dotenv
 load_dotenv("validate.env")
 
 def get_connection():
-    return mysql.connector.connect(
+    conn = mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
+        database=os.getenv("DB_NAME"),
+        charset="utf8mb4",
+        collation="utf8mb4_unicode_ci"
     )
+    cursor = conn.cursor()
+    cursor.execute("SET NAMES utf8mb4")
+    cursor.execute("SET character_set_results = utf8mb4")
+    cursor.close()
+    return conn

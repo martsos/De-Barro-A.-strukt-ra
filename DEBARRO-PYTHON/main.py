@@ -2,7 +2,9 @@ import fastapi
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 from database import get_connection
+
 
 app = fastapi.FastAPI()
 
@@ -17,7 +19,7 @@ app.add_middleware(
 
 @app.get("/")
 def index():
-    return {"status": "De Barro API fut"}
+    return {"STATUS": "De Barro API alive!:)"}
 
 @app.get("/cegek")
 def get_cegek():
@@ -32,7 +34,7 @@ def get_cegek():
 def get_tartalyok():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT tartaly_id, tartaly_szam, tartaly_tipus FROM dim_tartaly")
+    cursor.execute("SELECT tartaly_id, tartaly_szam, tartaly_tipus, befogado_kepesseg_l FROM dim_tartaly")
     result = cursor.fetchall()
     conn.close()
     return result
@@ -69,6 +71,15 @@ def get_fogyoanyagok():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT anyag_id, anyag_megnevezes, anyag_kategoria FROM dim_fogyoanyag")
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+@app.get("/keszlet")
+def get_keszlet():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT tartaly_id, aktualis_liter, utolso_mozgas FROM dim_keszlet")
     result = cursor.fetchall()
     conn.close()
     return result
@@ -138,7 +149,7 @@ def post_bevet(adat: BEvetAdat):
     )
     result = cursor.fetchone()
     conn.close()
-    return result
+    return JSONResponse(content=result)
 
 # ─── KÉSZLET KIADÁS ────────────────────────────────────────────
 
@@ -209,7 +220,7 @@ def post_kiadas(adat: KiadasAdat):
     )
     result = cursor.fetchone()
     conn.close()
-    return result
+    return JSONResponse(content=result)
 
 
 # ─── KÉSZLET MOZGÁS ────────────────────────────────────────────
@@ -275,4 +286,4 @@ def post_mozgas(adat: MozgasAdat):
     )
     result = cursor.fetchone()
     conn.close()
-    return result
+    return JSONResponse(content=result)
