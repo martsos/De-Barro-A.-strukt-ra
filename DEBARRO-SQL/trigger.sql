@@ -87,6 +87,15 @@ BEGIN
         WHERE tartaly_id = NEW.tartaly_id;
     END IF;
 
+    -- 6. JÁRMŰ ÁLLAPOT FRISSÍTÉS
+    IF NEW.ervenyes = TRUE THEN
+        UPDATE dim_jarmuvek_allapot
+        SET aktualis_km = COALESCE(NEW.km_akt, aktualis_km),
+            aktualis_uzemora = COALESCE(NEW.gepuzemora_akt, aktualis_uzemora),
+            utolso_mozgas = NOW()
+        WHERE eszkoz_sk = NEW.eszkoz_sk;
+    END IF;
+
 END$$
 
 DELIMITER ;

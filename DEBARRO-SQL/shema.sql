@@ -112,6 +112,18 @@ CREATE TABLE dim_jarmuvek (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
+CREATE TABLE dim_jarmuvek_allapot (
+    eszkoz_sk        INT UNSIGNED NOT NULL,
+    aktualis_km      DECIMAL(10,2) NULL,
+    aktualis_uzemora DECIMAL(10,2) NULL,
+    utolso_mozgas    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_jarmuvek_allapot PRIMARY KEY (eszkoz_sk),
+    CONSTRAINT fk_jarmuvek_allapot FOREIGN KEY (eszkoz_sk)
+        REFERENCES dim_jarmuvek (eszkoz_sk)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+); -- Új tábla implementációja KM, és Gépüzemóra nyilvántartásra
+
 
 CREATE TABLE dim_munkaero (
     foglalkoztatott_id    INT          UNSIGNED NOT NULL AUTO_INCREMENT,

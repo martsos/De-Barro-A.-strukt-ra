@@ -34,7 +34,8 @@ def get_cegek():
 def get_tartalyok():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT tartaly_id, tartaly_szam, tartaly_tipus, befogado_kepesseg_l FROM dim_tartaly")
+    cursor.execute("""SELECT tartaly_id, tartaly_szam, tartaly_tipus, befogado_kepesseg_l, f.anyag_megnevezes FROM dim_tartaly t
+        LEFT JOIN dim_fogyoanyag f ON t.anyag_id = f.anyag_id """)
     result = cursor.fetchall()
     conn.close()
     return result
@@ -44,6 +45,20 @@ def get_jarművek():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT eszkoz_sk, rendszam, megnevezes FROM dim_jarmuvek")
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+@app.get("/jarmuvek-allapot")
+def get_jarmuvek_allapot():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT j.eszkoz_sk, j.rendszam, j.megnevezes,
+               a.aktualis_km, a.aktualis_uzemora
+        FROM dim_jarmuvek j
+        LEFT JOIN dim_jarmuvek_allapot a ON j.eszkoz_sk = a.eszkoz_sk
+    """)
     result = cursor.fetchall()
     conn.close()
     return result
@@ -153,17 +168,19 @@ def post_bevet(adat: BEvetAdat):
 
 # ─── KÉSZLET KIADÁS ────────────────────────────────────────────
 
+from typing import Optional
+
 class KiadasAdat(BaseModel):
     datum: str
     kiado_szemely_nev: str
     gepkezelo_nev: str
     tartaly_szam: str
     rendszam: str
-    gepuzemora_eloz: float = None
-    gepuzemora_akt: float = None
-    km_eloz: float = None
-    km_akt: float = None
-    pisztoly_oraallas: float = None    # ÚJ
+    gepuzemora_eloz: Optional[float] = None
+    gepuzemora_akt: Optional[float] = None
+    km_eloz: Optional[float] = None
+    km_akt: Optional[float] = None
+    pisztoly_oraallas: Optional[float] = None
     kiadott_liter: float
     
 @app.post("/keszlet-kiadas")

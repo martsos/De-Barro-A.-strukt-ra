@@ -260,3 +260,46 @@ Sikeres rögzítésnél zöld, hibánál piros visszajelzést ad
 
 New tool --> · REACT for frontend · Node.js (Must have)
 
+Day 7 morning – React frontend fejlesztés
+Ma reggel nekiálltunk a frontend csiszolásának és átszervezésének.
+Ant Design dark theme – lecseréltük az alap React stílust Ant Design komponensekre, dark theme-mel. Sokkal emberibb lett a kinézet.
+Ékezet fix – a trigger hibaüzenetekből kivettük az összes ékezetes karaktert, mert a MySQL nem adta vissza rendesen UTF-8-ban. 
+Egyszerűbb volt a forrásnál javítani mint küzdeni az enkódolással.
+Bevételezés form fejlesztés:
+
+Tartály választásnál automatikusan megjelenik az aktuális készlet
+Kezdő liter mező automatikusan kitöltődik az aktuális készlettel
+Záró liter mezőnél látszik a max kapacitás
+Zöld/sárga/piros visszajelzés aszerint hogy sikeres, figyelmeztetéses vagy blokkolt volt a rögzítés
+
+Komponens átszervezés – az App.js lett a "váz" (dark theme, config), a bevételezés form kikerült egy külön Bevetelezesform.js fájlba. 
+Létrehoztuk a Kiadasform.js és Mozgasform.js placeholder fájlokat is – ezek jönnek következőnek.
+
+
+-- Tanulság – Disabled Input és Form adatok
+Mi volt a probléma:
+A mozgás formnál az anyag mezőt disabled Input-ként jelenítettem meg – így a felhasználó nem tudja szerkeszteni, csak látja az értéket. Viszont egy disabled Input nem kerül bele a form adataiba amikor elküldjük – ezért érkezett üres anyag_megnevezes a backendre és dobta a 422-es hibát.
+A tanulság:
+React-ban (és általában frontenden) különbség van a között amit megjelenítesz és amit elküldesz. Ha egy mező csak megjelenítésre való, az értéket a payload-ban kézzel kell hozzáadni a form adatokhoz.
+Megoldás:
+javascript// ROSSZ - values.anyag_megnevezes üres lesz
+anyag_megnevezes: values.anyag_megnevezes,
+
+// JÓ - a tartály adatból vesszük ki
+anyag_megnevezes: tartalyok.find(t => t.tartaly_szam === values.forras_tartaly_szam)?.anyag_megnevezes || "",
+Ökölszabály: Ha egy mező disabled vagy csak info célú → az értékét a payload-ban mindig külön add hozzá, ne a values-ból vedd! -- 
+
+!! Technikai adósság – dim táblák aktív/inaktív kezelése
+Minden dim táblába kelleni fog egy aktiv oszlop. Ha egy entitás kikerül a rendszerből (alkalmazott kilép, jármű selejtezés, tartály csere) – az adat megmarad a fact táblákban de a formokban már ne jelenjen meg.
+Érintett táblák: dim_tartaly, dim_jarmuvek, dim_munkaero, dim_ceg, dim_lokacio, dim_fogyoanyag !!
+
+
+Day 7 – Afternoon Formok véglegesítése
+A három beviteli form (Bevételezés, Mozgás, Kiadás) demo szinten kész.
+Kiadás form fejlesztés:
+
+Jármű választásnál automatikusan behúzza az aktuális km és üzemóra értékeket a dim_jarmuvek_allapot táblából
+Sikeres rögzítés után azonnal frissül az előző km/üzemóra érték – dupla bevitel ellen védett
+Optional[float] típus a nem kötelező mezőkre (gepuzemora, km, pisztoly)
+
+Demo státusz: A három form működőképes, validációval és visszajelzéssel. Az ezen felüli fejlesztések már teszt/éles fázishoz tartoznak.
