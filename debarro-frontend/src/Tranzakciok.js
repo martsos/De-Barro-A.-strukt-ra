@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, Table, Select, DatePicker, Tag, Typography, Tabs, Space } from "antd";
 import dayjs from "dayjs";
+import { API } from "./api";
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
-
-const API = "http://localhost:8000";
 
 function ervenyesTag(val, hiba) {
   if (!val) return <Tag color="error">Hibás</Tag>;

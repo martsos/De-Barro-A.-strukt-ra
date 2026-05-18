@@ -1,28 +1,29 @@
 import { useState, useEffect } from "react";
-import { Form, Select, DatePicker, InputNumber, Input, Button, Card, Alert, Typography } from "antd";
+import { Form, Select, DatePicker, InputNumber, Button, Card, Alert, Typography } from "antd";
 import dayjs from "dayjs";
+import { API } from "./api";
 
 const { Title } = Typography;
 
 function Kiadasform() {
-  const [tartalyok, setTartalyok] = useState([]);
-  const [alkalmazottak, setAlkalmazottak] = useState([]);
-  const [jarművek, setJarművek] = useState([]);
-  const [aktualisKeszlet, setAktualisKeszlet] = useState(null);
-  const [eredmeny, setEredmeny] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [tartalyok,       setTartalyok]       = useState([]);
+  const [alkalmazottak,   setAlkalmazottak]   = useState([]);
+  const [jarművek,        setJarművek]        = useState([]);
   const [jarmuvekAllapot, setJarmuvekAllapot] = useState([]);
+  const [aktualisKeszlet, setAktualisKeszlet] = useState(null);
+  const [eredmeny,        setEredmeny]        = useState(null);
+  const [loading,         setLoading]         = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
-    fetch("http://localhost:8000/tartaly").then(r => r.json()).then(setTartalyok);
-    fetch("http://localhost:8000/alkalmazott").then(r => r.json()).then(setAlkalmazottak);
-    fetch("http://localhost:8000/jarmu").then(r => r.json()).then(setJarművek);
-    fetch("http://localhost:8000/jarmuvek-allapot").then(r => r.json()).then(setJarmuvekAllapot);  // ÚJ
+    fetch(`${API}/tartaly`).then(r => r.json()).then(setTartalyok);
+    fetch(`${API}/alkalmazott`).then(r => r.json()).then(setAlkalmazottak);
+    fetch(`${API}/jarmu`).then(r => r.json()).then(setJarművek);
+    fetch(`${API}/jarmuvek-allapot`).then(r => r.json()).then(setJarmuvekAllapot);
   }, []);
 
   const onTaralyChange = (value) => {
-    fetch("http://localhost:8000/keszlet")
+    fetch(`${API}/keszlet`)
       .then(r => r.json())
       .then(data => {
         const tartaly = tartalyok.find(t => t.tartaly_szam === value);
@@ -33,15 +34,10 @@ function Kiadasform() {
       });
   };
 
-   const onJarmuChange = (value) => {
-    console.log("Választott rendszám:", value);
-    console.log("jarművek:", jarművek);
-    console.log("jarmuvekAllapot:", jarmuvekAllapot);
+  const onJarmuChange = (value) => {
     const jarmu = jarművek.find(j => j.rendszam === value);
-    console.log("Megtalált jármű:", jarmu);
     if (jarmu) {
       const allapot = jarmuvekAllapot.find(j => j.eszkoz_sk === jarmu.eszkoz_sk);
-      console.log("Megtalált állapot:", allapot);
       if (allapot) {
         form.setFieldValue("km_eloz", allapot.aktualis_km);
         form.setFieldValue("gepuzemora_eloz", allapot.aktualis_uzemora);
@@ -52,42 +48,32 @@ function Kiadasform() {
   const onFinish = async (values) => {
     setLoading(true);
     const payload = {
-      datum: values.datum.format("YYYY-MM-DD"),
+      datum:             values.datum.format("YYYY-MM-DD"),
       kiado_szemely_nev: values.kiado_szemely_nev,
-      gepkezelo_nev: values.gepkezelo_nev,
-      tartaly_szam: values.tartaly_szam,
-      rendszam: values.rendszam,
-      gepuzemora_eloz: values.gepuzemora_eloz || null,
-      gepuzemora_akt: values.gepuzemora_akt || null,
-      km_eloz: values.km_eloz || null,
-      km_akt: values.km_akt || null,
+      gepkezelo_nev:     values.gepkezelo_nev,
+      tartaly_szam:      values.tartaly_szam,
+      rendszam:          values.rendszam,
+      gepuzemora_eloz:   values.gepuzemora_eloz || null,
+      gepuzemora_akt:    values.gepuzemora_akt  || null,
+      km_eloz:           values.km_eloz         || null,
+      km_akt:            values.km_akt           || null,
       pisztoly_oraallas: values.pisztoly_oraallas || null,
-      kiadott_liter: values.kiadott_liter,
+      kiadott_liter:     values.kiadott_liter,
     };
 
-    const res = await fetch("http://localhost:8000/keszlet-kiadas", {
-      method: "POST",
+    const res  = await fetch(`${API}/keszlet-kiadas`, {
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body:    JSON.stringify(payload),
     });
     const data = await res.json();
     setEredmeny(data);
 
     if (data.ervenyes) {
-      onTaralyChange(values.tartaly_szam);
-      fetch("http://localhost:8000/jarmuvek-allapot")
-        .then(r => r.json())
-        .then(ujAllapot => {
-          setJarmuvekAllapot(ujAllapot);
-          const jarmu = jarművek.find(j => j.rendszam === values.rendszam);
-          if (jarmu) {
-            const allapot = ujAllapot.find(j => j.eszkoz_sk === jarmu.eszkoz_sk);
-            if (allapot) {
-              form.setFieldValue("km_eloz", allapot.aktualis_km);
-              form.setFieldValue("gepuzemora_eloz", allapot.aktualis_uzemora);
-            }
-          }
-        });
+      form.resetFields();
+      form.setFieldValue("datum", dayjs());
+      setAktualisKeszlet(null);
+      fetch(`${API}/jarmuvek-allapot`).then(r => r.json()).then(setJarmuvekAllapot);
     }
     setLoading(false);
   };
@@ -105,7 +91,7 @@ function Kiadasform() {
         />
       )}
 
-      <Form form={form} layout="vertical" onFinish={onFinish}>
+      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ datum: dayjs() }}>
 
         <Form.Item label="Dátum" name="datum" rules={[{ required: true }]}>
           <DatePicker style={{ width: "100%" }} defaultValue={dayjs()} />
@@ -132,7 +118,7 @@ function Kiadasform() {
         </Form.Item>
 
         <Form.Item
-          label={`Tartály - Aktuális készlet: ${aktualisKeszlet !== null ? aktualisKeszlet + ' L' : '---'}`}
+          label={`Tartály — Aktuális készlet: ${aktualisKeszlet !== null ? aktualisKeszlet + " L" : "---"}`}
           name="tartaly_szam"
           rules={[{ required: true }]}
         >
@@ -146,13 +132,19 @@ function Kiadasform() {
         </Form.Item>
 
         <Form.Item label="Jármű rendszám" name="rendszam" rules={[{ required: true }]}>
-          <Select placeholder="-- válassz --" onChange={onJarmuChange}>
-            {jarművek.map(j => (
-              <Select.Option key={j.eszkoz_sk} value={j.rendszam}>
-                {j.rendszam} - {j.megnevezes}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select 
+            showSearch 
+            placeholder="-- válassz --"
+            onChange={onJarmuChange}
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
+            options={jarművek.map(j => ({
+              value: j.rendszam,
+              label: `${j.rendszam} — ${j.megnevezes}`,
+              key: j.eszkoz_sk
+            }))}
+          />
         </Form.Item>
 
         <Form.Item label="Gépüzemóra előző" name="gepuzemora_eloz">
@@ -191,8 +183,8 @@ function Kiadasform() {
         <Alert
           message={
             eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "✅ Sikeres rögzítés" :
-            eredmeny.ervenyes && eredmeny.hiba_uzenet ? "⚠️ Rögzítve - Figyelmeztetés" :
-            "❌ Hiba - Nem rögzítve"
+            eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "⚠️ Rögzítve — Figyelmeztetés" :
+            "❌ Hiba — Nem rögzítve"
           }
           description={
             <div>
@@ -202,7 +194,7 @@ function Kiadasform() {
           }
           type={
             eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "success" :
-            eredmeny.ervenyes && eredmeny.hiba_uzenet ? "warning" :
+            eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "warning" :
             "error"
           }
           showIcon

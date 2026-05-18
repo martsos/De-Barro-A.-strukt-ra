@@ -4,17 +4,19 @@ import Bevetelezesform from "./Bevetelezesform.js";
 import Kiadasform from "./Kiadasform.js";
 import Mozgasform from "./Mozgasform.js";
 import Tranzakciok from "./Tranzakciok.js";
+import Dashboard from "./Dashboard.js";
 
-const pages = ["kiadas", "mozgas", "bevet", "tortenelem"];
+const pages = ["dashboard", "kiadas", "mozgas", "bevet", "tortenelem"];
 
 function App() {
-  const [activePage, setActivePage] = useState("kiadas");
+  const [activePage, setActivePage] = useState("dashboard");
 
   const currentIndex = pages.indexOf(activePage);
   const balOldal = pages[(currentIndex - 1 + pages.length) % pages.length];
   const jobbOldal = pages[(currentIndex + 1) % pages.length];
 
   const pageLabels = {
+    dashboard: "📊 Dashboard",
     kiadas: "⛽ Kiadás",
     mozgas: "🔄 Mozgás",
     bevet: "📥 Bevételezés",
@@ -37,6 +39,7 @@ function App() {
 
           {/* FORM */}
           <div style={{ flex: 1 }}>
+            {activePage === "dashboard" && <Dashboard />}
             {activePage === "kiadas" && <Kiadasform />}
             {activePage === "mozgas" && <Mozgasform />}
             {activePage === "bevet" && <Bevetelezesform />}
