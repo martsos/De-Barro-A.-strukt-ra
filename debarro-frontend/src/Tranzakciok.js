@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, Table, Select, DatePicker, Tag, Typography, Tabs, Space } from "antd";
+import { Table, Select, DatePicker, Tag, Typography, Tabs, Space } from "antd";
 import dayjs from "dayjs";
 import { API } from "./api";
+import "./shared.css";
+import "./Tranzakciok.css";
 
-const { Title } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 function ervenyesTag(val, hiba) {
@@ -56,12 +58,12 @@ const bevetColumns = [
 ];
 
 const mozgasColumns = [
-  { title: "Dátum",         dataIndex: "datum",            key: "datum",          width: 105 },
-  { title: "Forrás tartály", dataIndex: "forras_tartaly",  key: "forras_tartaly" },
-  { title: "Cél tartály",   dataIndex: "cel_tartaly",      key: "cel_tartaly" },
-  { title: "Felvevő",       dataIndex: "felvevo",          key: "felvevo" },
-  { title: "Anyag",         dataIndex: "anyag_megnevezes", key: "anyag_megnevezes" },
-  { title: "Mozgatott (L)", dataIndex: "mozgatott_liter",  key: "mozgatott_liter" },
+  { title: "Dátum",          dataIndex: "datum",            key: "datum",          width: 105 },
+  { title: "Forrás tartály", dataIndex: "forras_tartaly",   key: "forras_tartaly" },
+  { title: "Cél tartály",    dataIndex: "cel_tartaly",      key: "cel_tartaly" },
+  { title: "Felvevő",        dataIndex: "felvevo",          key: "felvevo" },
+  { title: "Anyag",          dataIndex: "anyag_megnevezes", key: "anyag_megnevezes" },
+  { title: "Mozgatott (L)",  dataIndex: "mozgatott_liter",  key: "mozgatott_liter" },
   {
     title: "Állapot", key: "allapot",
     render: (_, r) => ervenyesTag(r.ervenyes, r.hiba_uzenet),
@@ -155,33 +157,52 @@ function Tranzakciok() {
   ];
 
   return (
-    <Card style={{ maxWidth: 1100, margin: "0 auto" }}>
-      <Title level={3}>Tranzakció-előzmények</Title>
+    <div className="db-border db-wide">
+      <div className="db-shell">
 
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Select
-          placeholder="Összes tartály"
-          allowClear
-          style={{ width: 200 }}
-          value={tartalyId}
-          onChange={v => setTartalyId(v ?? null)}
-        >
-          {tartalyok.map(t => (
-            <Select.Option key={t.tartaly_id} value={t.tartaly_id}>
-              {t.tartaly_szam}
-            </Select.Option>
-          ))}
-        </Select>
+        {/* ── HEADER ─────────────────────────────────────── */}
+        <div className="db-header">
+          <div>
+            <Text className="db-eyebrow">De Barro · Előzmények</Text>
+            <div style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: 20 }}>
+              Tranzakció-előzmények
+            </div>
+          </div>
+          <span className="db-badge">📋</span>
+        </div>
 
-        <RangePicker
-          value={dateRange}
-          onChange={v => setDateRange(v ?? [null, null])}
-          format="YYYY-MM-DD"
-        />
-      </Space>
+        {/* ── FILTERS ────────────────────────────────────── */}
+        <div className="trx-filters">
+          <Text className="trx-filter-label">Szűrő</Text>
+          <Space wrap>
+            <Select
+              placeholder="Összes tartály"
+              allowClear
+              style={{ width: 200 }}
+              value={tartalyId}
+              onChange={v => setTartalyId(v ?? null)}
+            >
+              {tartalyok.map(t => (
+                <Select.Option key={t.tartaly_id} value={t.tartaly_id}>
+                  {t.tartaly_szam}
+                </Select.Option>
+              ))}
+            </Select>
+            <RangePicker
+              value={dateRange}
+              onChange={v => setDateRange(v ?? [null, null])}
+              format="YYYY-MM-DD"
+            />
+          </Space>
+        </div>
 
-      <Tabs items={tabItems} />
-    </Card>
+        {/* ── TABS + TABLES ──────────────────────────────── */}
+        <div className="trx-body">
+          <Tabs items={tabItems} className="trx-tabs" />
+        </div>
+
+      </div>
+    </div>
   );
 }
 

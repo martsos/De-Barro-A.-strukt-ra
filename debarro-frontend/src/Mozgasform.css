@@ -1,0 +1,18 @@
+/* ─── MOZGÁS FORM — COMPONENT OVERRIDES ─────────────────────── */
+
+/* Anyag label inside the source tank bar */
+.mf-anyag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mf-anyag-value {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  letter-spacing: 0.5px;
+}

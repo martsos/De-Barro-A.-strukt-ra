@@ -1,38 +1,92 @@
-.App {
-  text-align: center;
-}
+/* ─── DE BARRO — APP SHELL & NAVIGATION ─────────────────────── */
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app-nav {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 64px;
+  background: linear-gradient(90deg, #0d0500 0%, #140800 50%, #08111f 100%);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.18);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
 }
 
-.App-link {
-  color: #61dafb;
+.app-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.app-nav-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.app-nav-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  line-height: 1.2;
+}
+
+.app-nav-sub {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(249, 115, 22, 0.45);
+  display: block;
+}
+
+.app-nav-items {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.app-nav-item {
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.app-nav-item:hover {
+  background: rgba(249, 115, 22, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.app-nav-item.active {
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+  font-weight: 600;
+}
+
+.app-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f97316, transparent);
+  border-radius: 1px;
+}
+
+.app-content {
+  padding: 32px 16px 64px;
 }

@@ -1,18 +1,25 @@
 import { useState, useEffect } from "react";
-import { Form, Select, DatePicker, InputNumber, Input, Button, Card, Alert, Typography } from "antd";
+import {
+  Form, Select, DatePicker, InputNumber, Button, Alert,
+  Typography, Progress, Divider,
+} from "antd";
 import dayjs from "dayjs";
 import { API } from "./api";
+import "./shared.css";
+import "./Mozgasform.css";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 function Mozgasform() {
-  const [tartalyok,      setTartalyok]      = useState([]);
-  const [alkalmazottak,  setAlkalmazottak]  = useState([]);
-  const [forrasKeszlet,  setForrasKeszlet]  = useState(null);
-  const [celKeszlet,     setCelKeszlet]     = useState(null);
-  const [celMaxKapacitas,setCelMaxKapacitas]= useState(null);
-  const [eredmeny,       setEredmeny]       = useState(null);
-  const [loading,        setLoading]        = useState(false);
+  const [tartalyok,         setTartalyok]         = useState([]);
+  const [alkalmazottak,     setAlkalmazottak]     = useState([]);
+  const [forrasKeszlet,     setForrasKeszlet]     = useState(null);
+  const [forrasMaxKapacitas,setForrasMaxKapacitas]= useState(null);
+  const [forrasAnyag,       setForrasAnyag]       = useState(null);
+  const [celKeszlet,        setCelKeszlet]        = useState(null);
+  const [celMaxKapacitas,   setCelMaxKapacitas]   = useState(null);
+  const [eredmeny,          setEredmeny]          = useState(null);
+  const [loading,           setLoading]           = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -27,11 +34,21 @@ function Mozgasform() {
         const tartaly = tartalyok.find(t => t.tartaly_szam === tartaly_szam);
         if (!tartaly) return null;
         const keszlet = data.find(k => k.tartaly_id === tartaly.tartaly_id);
-        return { aktualis: keszlet ? keszlet.aktualis_liter : 0, max: tartaly.befogado_kepesseg_l };
+        return {
+          aktualis: keszlet ? parseFloat(keszlet.aktualis_liter) : 0,
+          max:      parseFloat(tartaly.befogado_kepesseg_l),
+        };
       });
 
   const onForrasTaralyChange = (value) => {
-    getKeszlet(value).then(k => { if (k) setForrasKeszlet(k.aktualis); });
+    const tartaly = tartalyok.find(t => t.tartaly_szam === value);
+    setForrasAnyag(tartaly?.anyag_megnevezes || null);
+    getKeszlet(value).then(k => {
+      if (k) {
+        setForrasKeszlet(k.aktualis);
+        setForrasMaxKapacitas(k.max);
+      }
+    });
   };
 
   const onCelTaralyChange = (value) => {
@@ -66,101 +83,202 @@ function Mozgasform() {
       form.resetFields();
       form.setFieldValue("datum", dayjs());
       setForrasKeszlet(null);
+      setForrasMaxKapacitas(null);
+      setForrasAnyag(null);
       setCelKeszlet(null);
       setCelMaxKapacitas(null);
     }
     setLoading(false);
   };
 
+  const forrasPct = forrasKeszlet !== null && forrasMaxKapacitas
+    ? Math.min(100, Math.round((forrasKeszlet / forrasMaxKapacitas) * 100))
+    : null;
+  const forrasColor = forrasPct === null  ? "#52c41a"
+    : forrasPct < 10                      ? "#ff4d4f"
+    : forrasPct < 30                      ? "#faad14"
+    :                                       "#52c41a";
+
+  const showForras = forrasKeszlet !== null;
+  const showCel    = celKeszlet !== null || celMaxKapacitas !== null;
+
   return (
-    <Card style={{ maxWidth: 560, margin: "0 auto" }}>
-      <Title level={3}>🔄 Készlet Mozgás</Title>
+    <div className="db-border">
+      <div className="db-shell">
 
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ datum: dayjs() }}>
+        {/* ── HEADER ─────────────────────────────────────── */}
+        <div className="db-header">
+          <div>
+            <Text className="db-eyebrow">De Barro · Készlet-mozgás</Text>
+            <Title level={3} style={{ margin: 0, color: "#fff", fontWeight: 700 }}>
+              Készlet Mozgás
+            </Title>
+          </div>
+          <span className="db-badge">🔄</span>
+        </div>
 
-        <Form.Item label="Dátum" name="datum" rules={[{ required: true }]}>
-          <DatePicker style={{ width: "100%" }} defaultValue={dayjs()} />
-        </Form.Item>
+        {/* ── DATE ───────────────────────────────────────── */}
+        <div className="db-date-row">
+          <Form form={form} layout="vertical" onFinish={onFinish} style={{ padding: 0 }}>
+            <Form.Item name="datum" rules={[{ required: true }]} style={{ marginBottom: 0 }}>
+              <DatePicker
+                style={{ width: "100%", height: 40 }}
+                defaultValue={dayjs()}
+                format="YYYY. MMMM D. (dddd)"
+                placeholder="Dátum kiválasztása"
+              />
+            </Form.Item>
+          </Form>
+        </div>
 
-        <Form.Item label="Felvevő" name="felvevo_nev" rules={[{ required: true }]}>
-          <Select placeholder="-- válassz --">
-            {alkalmazottak.map(a => (
-              <Select.Option key={a.foglalkoztatott_id} value={a.foglalkoztatott_nev}>
-                {a.foglalkoztatott_nev}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+        {/* ── MAIN FORM ──────────────────────────────────── */}
+        <Form form={form} layout="vertical" onFinish={onFinish} className="db-form">
 
-        <Form.Item
-          label={`Forrás tartály — Aktuális készlet: ${forrasKeszlet !== null ? forrasKeszlet + " L" : "---"}`}
-          name="forras_tartaly_szam"
-          rules={[{ required: true }]}
-        >
-          <Select placeholder="-- válassz --" onChange={onForrasTaralyChange}>
-            {tartalyok.map(t => (
-              <Select.Option key={t.tartaly_id} value={t.tartaly_szam}>
-                {t.tartaly_szam} ({t.tartaly_tipus})
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          {/* SECTION: FELVEVŐ */}
+          <div className="db-section">Felvevő</div>
+          <Form.Item name="felvevo_nev" rules={[{ required: true }]}>
+            <Select placeholder="— válassz —">
+              {alkalmazottak.map(a => (
+                <Select.Option key={a.foglalkoztatott_id} value={a.foglalkoztatott_nev}>
+                  {a.foglalkoztatott_nev}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-        <Form.Item
-          label={`Cél tartály — Aktuális: ${celKeszlet !== null ? celKeszlet + " L" : "---"} / Max: ${celMaxKapacitas !== null ? celMaxKapacitas + " L" : "---"}`}
-          name="cel_tartaly_szam"
-          rules={[{ required: true }]}
-        >
-          <Select placeholder="-- válassz --" onChange={onCelTaralyChange}>
-            {tartalyok.map(t => (
-              <Select.Option key={t.tartaly_id} value={t.tartaly_szam}>
-                {t.tartaly_szam} ({t.tartaly_tipus})
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          {/* SECTION: FORRÁS TARTÁLY */}
+          <div className="db-section">Forrás tartály</div>
+          <Form.Item name="forras_tartaly_szam" rules={[{ required: true }]}
+            style={{ marginBottom: showForras ? 10 : 16 }}>
+            <Select placeholder="— válassz tartályt —" onChange={onForrasTaralyChange}>
+              {tartalyok.map(t => (
+                <Select.Option key={t.tartaly_id} value={t.tartaly_szam}>
+                  {t.tartaly_szam} · {t.tartaly_tipus}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-        <Form.Item label="Anyag">
-          <Input
-            value={tartalyok.find(t => t.tartaly_szam === form.getFieldValue("forras_tartaly_szam"))?.anyag_megnevezes || "---"}
-            disabled
-          />
-        </Form.Item>
-
-        <Form.Item label="Mozgatott liter" name="mozgatott_liter" rules={[{ required: true }]}>
-          <InputNumber style={{ width: "100%" }} min={0} />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
-            Mozgás rögzítése
-          </Button>
-        </Form.Item>
-
-      </Form>
-
-      {eredmeny && (
-        <Alert
-          message={
-            eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "✅ Sikeres rögzítés" :
-            eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "⚠️ Rögzítve — Figyelmeztetés" :
-            "❌ Hiba — Nem rögzítve"
-          }
-          description={
-            <div>
-              <p>Mozgás ID: {eredmeny.mozgas_id}</p>
-              {eredmeny.hiba_uzenet && <p>{eredmeny.hiba_uzenet}</p>}
+          {showForras && (
+            <div className="db-tank-bar">
+              {forrasAnyag && (
+                <div className="mf-anyag-row">
+                  <Text className="db-tank-meta-label">Anyag</Text>
+                  <Text className="mf-anyag-value">{forrasAnyag}</Text>
+                </div>
+              )}
+              <div className="db-tank-meta">
+                <Text className="db-tank-meta-label">Aktuális készlet</Text>
+                <span>
+                  <Text className="db-tank-meta-value" style={{ color: forrasColor }}>
+                    {forrasKeszlet?.toLocaleString("hu-HU")} L
+                  </Text>
+                  <Text className="db-tank-meta-max">
+                    {" "}/ {forrasMaxKapacitas?.toLocaleString("hu-HU")} L
+                  </Text>
+                </span>
+              </div>
+              <Progress
+                percent={forrasPct}
+                strokeColor={forrasColor}
+                showInfo={false}
+                size={["100%", 5]}
+                style={{ margin: 0 }}
+              />
             </div>
-          }
-          type={
-            eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "success" :
-            eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "warning" :
-            "error"
-          }
-          showIcon
-        />
-      )}
-    </Card>
+          )}
+
+          {/* SECTION: CÉL TARTÁLY */}
+          <div className="db-section" style={{ marginTop: showForras ? 22 : 0 }}>
+            Cél tartály
+          </div>
+          <Form.Item name="cel_tartaly_szam" rules={[{ required: true }]}
+            style={{ marginBottom: showCel ? 10 : 16 }}>
+            <Select placeholder="— válassz tartályt —" onChange={onCelTaralyChange}>
+              {tartalyok.map(t => (
+                <Select.Option key={t.tartaly_id} value={t.tartaly_szam}>
+                  {t.tartaly_szam} · {t.tartaly_tipus}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {showCel && (
+            <div className="db-info-chip">
+              <div className="db-info-stat">
+                <Text className="db-chip-label">Aktuális</Text>
+                <Text className="db-chip-value">
+                  {celKeszlet != null ? Number(celKeszlet).toLocaleString("hu-HU") + " L" : "—"}
+                </Text>
+              </div>
+              <div className="db-chip-divider" />
+              <div className="db-info-stat">
+                <Text className="db-chip-label">Maximum</Text>
+                <Text className="db-chip-value">
+                  {celMaxKapacitas != null ? Number(celMaxKapacitas).toLocaleString("hu-HU") + " L" : "—"}
+                </Text>
+              </div>
+            </div>
+          )}
+
+          {/* FEATURED: MOZGATOTT LITER */}
+          <Divider style={{ borderColor: "rgba(249,115,22,0.15)", margin: "20px 0 16px" }} />
+          <div className="db-liter-wrap">
+            <Text className="db-liter-label">Mozgatott mennyiség</Text>
+            <Form.Item name="mozgatott_liter" rules={[{ required: true }]} style={{ marginBottom: 0 }}>
+              <InputNumber
+                style={{ width: "100%" }}
+                min={0}
+                placeholder="0"
+                addonAfter={<span className="db-liter-addon">L</span>}
+              />
+            </Form.Item>
+          </div>
+
+          {/* SUBMIT */}
+          <Form.Item style={{ marginTop: 20, marginBottom: 0 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              className="db-submit"
+            >
+              {loading ? "Rögzítés…" : "Mozgás rögzítése"}
+            </Button>
+          </Form.Item>
+
+        </Form>
+
+        {/* RESULT */}
+        {eredmeny && (
+          <div className="db-result">
+            <Alert
+              message={
+                eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "Sikeres rögzítés" :
+                eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "Rögzítve — Figyelmeztetés" :
+                "Hiba — Nem rögzítve"
+              }
+              description={
+                <div>
+                  <span>Mozgás azonosító: #{eredmeny.mozgas_id}</span>
+                  {eredmeny.hiba_uzenet && (
+                    <p style={{ margin: "4px 0 0", fontSize: 12 }}>{eredmeny.hiba_uzenet}</p>
+                  )}
+                </div>
+              }
+              type={
+                eredmeny.ervenyes && !eredmeny.hiba_uzenet ? "success" :
+                eredmeny.ervenyes &&  eredmeny.hiba_uzenet ? "warning" :
+                "error"
+              }
+              showIcon
+            />
+          </div>
+        )}
+
+      </div>
+    </div>
   );
 }
 

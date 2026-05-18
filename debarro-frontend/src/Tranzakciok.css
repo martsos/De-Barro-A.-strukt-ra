@@ -1,0 +1,52 @@
+/* ─── TRANZAKCIÓK — HISTORY VIEW ────────────────────────────── */
+
+/* Filter bar */
+.trx-filters {
+  padding: 14px 28px;
+  background: rgba(249, 115, 22, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.trx-filter-label {
+  font-size: 10px !important;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.25) !important;
+  flex-shrink: 0;
+}
+
+/* Table body */
+.trx-body {
+  padding: 0 20px 24px;
+}
+
+/* Error row highlight */
+.ant-table-tbody .row-hiba td {
+  background: rgba(255, 77, 79, 0.05) !important;
+}
+
+.ant-table-tbody .row-hiba:hover td {
+  background: rgba(255, 77, 79, 0.09) !important;
+}
+
+/* Orange active tab indicator */
+.trx-tabs .ant-tabs-ink-bar {
+  background: #f97316 !important;
+}
+
+.trx-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #f97316 !important;
+}
+
+.trx-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: rgba(249, 115, 22, 0.75) !important;
+}
+
+.trx-tabs .ant-tabs-nav {
+  padding: 0 8px;
+  margin-bottom: 12px !important;
+}
