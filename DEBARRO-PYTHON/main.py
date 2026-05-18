@@ -304,3 +304,129 @@ def post_mozgas(adat: MozgasAdat):
     result = cursor.fetchone()
     conn.close()
     return JSONResponse(content=result)
+
+    # ─── TRANZAKCIÓ ELŐZMÉNYEK ─────────────────────────────────────
+
+@app.get("/tranzakciok/kiadas")
+def get_kiadas_lista(
+    tartaly_id: Optional[int] = None,
+    datum_tol: Optional[str] = None,
+    datum_ig: Optional[str] = None,
+):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    sql = """
+        SELECT k.kiadas_id, i.datum,
+               t.tartaly_szam,
+               mn1.foglalkoztatott_nev AS kiado_szemely,
+               mn2.foglalkoztatott_nev AS gepkezelo,
+               j.rendszam, j.megnevezes,
+               k.km_eloz, k.km_akt,
+               k.gepuzemora_eloz, k.gepuzemora_akt,
+               k.pisztoly_oraallas,
+               k.kiadott_liter,
+               k.ervenyes, k.hiba_uzenet
+        FROM fact_keszlet_kiadas k
+        JOIN  dim_ido i      ON i.datum_id              = k.datum_id
+        JOIN  dim_tartaly t  ON t.tartaly_id             = k.tartaly_id
+        LEFT JOIN dim_munkaero mn1 ON mn1.foglalkoztatott_id = k.kiado_szemely_id
+        LEFT JOIN dim_munkaero mn2 ON mn2.foglalkoztatott_id = k.gepkezelo_id
+        LEFT JOIN dim_jarmuvek j   ON j.eszkoz_sk            = k.eszkoz_sk
+        WHERE 1=1
+    """
+    params = []
+    if tartaly_id is not None:
+        sql += " AND k.tartaly_id = %s"
+        params.append(tartaly_id)
+    if datum_tol:
+        sql += " AND i.datum >= %s"
+        params.append(datum_tol)
+    if datum_ig:
+        sql += " AND i.datum <= %s"
+        params.append(datum_ig)
+    sql += " ORDER BY i.datum DESC, k.kiadas_id DESC LIMIT 500"
+    cursor.execute(sql, params)
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+
+@app.get("/tranzakciok/bevet")
+def get_bevet_lista(
+    tartaly_id: Optional[int] = None,
+    datum_tol: Optional[str] = None,
+    datum_ig: Optional[str] = None,
+):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    sql = """
+        SELECT b.bevet_id, i.datum,
+               t.tartaly_szam,
+               mn.foglalkoztatott_nev AS atvevo,
+               c.ceg_nev              AS szallito,
+               b.kezdo_liter, b.bejovo_liter, b.zaro_liter,
+               b.egysegar, b.szamla_szam,
+               b.ervenyes, b.hiba_uzenet
+        FROM fact_keszlet_bevet b
+        JOIN  dim_ido i      ON i.datum_id              = b.datum_id
+        JOIN  dim_tartaly t  ON t.tartaly_id             = b.tartaly_id
+        LEFT JOIN dim_munkaero mn ON mn.foglalkoztatott_id = b.atvevo_id
+        LEFT JOIN dim_ceg c       ON c.ceg_id              = b.szallito_id
+        WHERE 1=1
+    """
+    params = []
+    if tartaly_id is not None:
+        sql += " AND b.tartaly_id = %s"
+        params.append(tartaly_id)
+    if datum_tol:
+        sql += " AND i.datum >= %s"
+        params.append(datum_tol)
+    if datum_ig:
+        sql += " AND i.datum <= %s"
+        params.append(datum_ig)
+    sql += " ORDER BY i.datum DESC, b.bevet_id DESC LIMIT 500"
+    cursor.execute(sql, params)
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+
+@app.get("/tranzakciok/mozgas")
+def get_mozgas_lista(
+    tartaly_id: Optional[int] = None,
+    datum_tol: Optional[str] = None,
+    datum_ig: Optional[str] = None,
+):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    sql = """
+        SELECT m.mozgas_id, i.datum,
+               tf.tartaly_szam AS forras_tartaly,
+               tc.tartaly_szam AS cel_tartaly,
+               mn.foglalkoztatott_nev AS felvevo,
+               f.anyag_megnevezes,
+               m.mozgatott_liter,
+               m.ervenyes, m.hiba_uzenet
+        FROM fact_keszlet_mozgas m
+        JOIN  dim_ido i       ON i.datum_id               = m.datum_id
+        JOIN  dim_tartaly tf  ON tf.tartaly_id             = m.forras_tartaly_id
+        JOIN  dim_tartaly tc  ON tc.tartaly_id             = m.cel_tartaly_id
+        LEFT JOIN dim_munkaero mn ON mn.foglalkoztatott_id = m.felvevo_id
+        LEFT JOIN dim_fogyoanyag f ON f.anyag_id           = m.anyag_id
+        WHERE 1=1
+    """
+    params = []
+    if tartaly_id is not None:
+        sql += " AND (m.forras_tartaly_id = %s OR m.cel_tartaly_id = %s)"
+        params.extend([tartaly_id, tartaly_id])
+    if datum_tol:
+        sql += " AND i.datum >= %s"
+        params.append(datum_tol)
+    if datum_ig:
+        sql += " AND i.datum <= %s"
+        params.append(datum_ig)
+    sql += " ORDER BY i.datum DESC, m.mozgas_id DESC LIMIT 500"
+    cursor.execute(sql, params)
+    result = cursor.fetchall()
+    conn.close()
+    return result

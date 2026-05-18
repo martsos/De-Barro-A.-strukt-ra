@@ -1,7 +1,7 @@
 -- ============================================================
 -- VIEW 1: Tartályonkénti aktuális egyenleg
 -- ============================================================
-CREATE VIEW vw_tartaly_egyenleg AS
+CREATE OR REPLACE VIEW vw_tartaly_egyenleg AS
 SELECT
     t.tartaly_id,
     t.tartaly_szam,
@@ -9,18 +9,40 @@ SELECT
     t.befogado_kepesseg_l,
     f.anyag_megnevezes,
     l.lokacio_nev,
-    COALESCE(SUM(b.zaro_liter), 0)     AS ossz_bevet,
-    COALESCE(SUM(k.kiadott_liter), 0)  AS ossz_kiadott,
-    COALESCE(SUM(b.zaro_liter), 0) 
-        - COALESCE(SUM(k.kiadott_liter), 0) AS aktualis_egyenleg
+    COALESCE(dk.aktualis_liter, 0)          AS aktualis_liter,
+    dk.utolso_mozgas,
+    COALESCE(b.ossz_bevet,       0)         AS ossz_bevet,
+    COALESCE(k.ossz_kiadott,     0)         AS ossz_kiadott,
+    COALESCE(mo.ossz_mozgas_ki,  0)         AS ossz_mozgas_ki,
+    COALESCE(mi.ossz_mozgas_be,  0)         AS ossz_mozgas_be
 FROM dim_tartaly t
-LEFT JOIN dim_fogyoanyag f  ON f.anyag_id      = t.anyag_id
-LEFT JOIN dim_lokacio l     ON l.lokacio_id    = t.tartaly_lokacio_id
-LEFT JOIN fact_keszlet_bevet b  ON b.tartaly_id = t.tartaly_id
-LEFT JOIN fact_keszlet_kiadas k ON k.tartaly_id = t.tartaly_id
-GROUP BY
-    t.tartaly_id, t.tartaly_szam, t.tartaly_tipus,
-    t.befogado_kepesseg_l, f.anyag_megnevezes, l.lokacio_nev;
+LEFT JOIN dim_fogyoanyag f  ON f.anyag_id       = t.anyag_id
+LEFT JOIN dim_lokacio l     ON l.lokacio_id     = t.tartaly_lokacio_id
+LEFT JOIN dim_keszlet dk    ON dk.tartaly_id    = t.tartaly_id
+LEFT JOIN (
+    SELECT tartaly_id, SUM(bejovo_liter) AS ossz_bevet
+    FROM fact_keszlet_bevet
+    WHERE ervenyes = TRUE
+    GROUP BY tartaly_id
+) b  ON b.tartaly_id = t.tartaly_id
+LEFT JOIN (
+    SELECT tartaly_id, SUM(kiadott_liter) AS ossz_kiadott
+    FROM fact_keszlet_kiadas
+    WHERE ervenyes = TRUE
+    GROUP BY tartaly_id
+) k  ON k.tartaly_id = t.tartaly_id
+LEFT JOIN (
+    SELECT forras_tartaly_id AS tartaly_id, SUM(mozgatott_liter) AS ossz_mozgas_ki
+    FROM fact_keszlet_mozgas
+    WHERE ervenyes = TRUE
+    GROUP BY forras_tartaly_id
+) mo ON mo.tartaly_id = t.tartaly_id
+LEFT JOIN (
+    SELECT cel_tartaly_id AS tartaly_id, SUM(mozgatott_liter) AS ossz_mozgas_be
+    FROM fact_keszlet_mozgas
+    WHERE ervenyes = TRUE
+    GROUP BY cel_tartaly_id
+) mi ON mi.tartaly_id = t.tartaly_id;
 
 
 -- ============================================================

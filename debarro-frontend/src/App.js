@@ -3,8 +3,9 @@ import { ConfigProvider, theme, Button } from "antd";
 import Bevetelezesform from "./Bevetelezesform.js";
 import Kiadasform from "./Kiadasform.js";
 import Mozgasform from "./Mozgasform.js";
+import Tranzakciok from "./Tranzakciok.js";
 
-const pages = ["kiadas", "mozgas", "bevet"];
+const pages = ["kiadas", "mozgas", "bevet", "tortenelem"];
 
 function App() {
   const [activePage, setActivePage] = useState("kiadas");
@@ -16,7 +17,8 @@ function App() {
   const pageLabels = {
     kiadas: "⛽ Kiadás",
     mozgas: "🔄 Mozgás",
-    bevet: "📥 Bevételezés"
+    bevet: "📥 Bevételezés",
+    tortenelem: "📋 Előzmények",
   };
 
   return (
@@ -38,6 +40,7 @@ function App() {
             {activePage === "kiadas" && <Kiadasform />}
             {activePage === "mozgas" && <Mozgasform />}
             {activePage === "bevet" && <Bevetelezesform />}
+            {activePage === "tortenelem" && <Tranzakciok />}
           </div>
 
           {/* JOBB GOMB */}

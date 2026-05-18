@@ -67,16 +67,18 @@ BEGIN
         END IF;
     END IF;
 
-    -- 4. DEFENSE LIMIT
+    -- 4. DEFENSE LIMIT — over-issue is an error, not a warning,
+    --    so the inventory update below is blocked and cannot go negative
     SELECT aktualis_liter INTO defense_limit
     FROM dim_keszlet
     WHERE tartaly_id = NEW.tartaly_id;
 
-    IF defense_limit IS NOT NULL 
+    IF defense_limit IS NOT NULL
        AND NEW.kiadott_liter > defense_limit THEN
+        SET NEW.ervenyes = FALSE;
         SET NEW.hiba_uzenet = CONCAT_WS(' | ', NEW.hiba_uzenet,
-            CONCAT('FIGYELMEZTETES: KESZLET NEGATIV(',
-                   defense_limit - NEW.kiadott_liter, ')'));
+            CONCAT('HIBA: NINCS ELEG KESZLET! Elerheto(',
+                   defense_limit, ') < kiadott(', NEW.kiadott_liter, ')'));
     END IF;
 
     -- 5. KÉSZLET FRISSÍTÉS
