@@ -1,305 +1,381 @@
-De Barro – Üzemanyag & Eszköznyilvántartó Rendszer
+'De Barro – Üzemanyag & Eszköznyilvántartó Rendszer'
 DAY 1 – Projekt alapozás
-Dátum: 2026-05-04
+      Dátum: 2026-05-04
 
-Kontextus
-A cég jelenleg 2019 előtti Excel alapú nyilvántartást használ üzemanyag, olaj és AdBlue kezelésére, közel 4300+ tranzakciós sorral és 57 oszlopos összesítő táblával. A cél egy modern, SQL alapú rendszerre való átállás Python + HTML frontenddel, amely later VPS-re költöztethető.
+      Kontextus
+      A cég jelenleg 2019 előtti Excel alapú nyilvántartást használ üzemanyag, olaj és AdBlue kezelésére, közel 4300+ tranzakciós sorral és 57 oszlopos összesítő táblával. A cél egy modern, SQL alapú rendszerre való átállás Python + HTML frontenddel, amely later VPS-re költöztethető.
 
-Elvégzett munka
-Környezet felállítása
+      Elvégzett munka
+      Környezet felállítása
 
-MySQL 8.4 telepítése winget segítségével – a szolgáltatás manuális inicializálást igényelt (mysqld --initialize-insecure), mivel a winget installer nem regisztrálta automatikusan a Windows service-t
-Root jelszó beállítása mysql_native_password autentikációval (kompatibilitási ok)
-Python 3.12 + mysql-connector-python telepítése
-VS Code + SQLTools extension bekötése a lokális MySQL instance-ra
-Projekt mappa: C:\projektek\debarro
+      MySQL 8.4 telepítése winget segítségével – a szolgáltatás manuális inicializálást igényelt (mysqld --initialize-insecure), mivel a winget installer nem regisztrálta automatikusan a Windows service-t
+      Root jelszó beállítása mysql_native_password autentikációval (kompatibilitási ok)
+      Python 3.12 + mysql-connector-python telepítése
+      VS Code + SQLTools extension bekötése a lokális MySQL instance-ra
+      Projekt mappa: C:\projektek\debarro
 
-Adatbázis tervezés
-Az eredeti Excel struktúra elemzése alapján egy normalizált, csillag-séma alapú adatmodell született:
-8 dimenzió tábla: dim_ceg, dim_lokacio, dim_tartaly, dim_fogyoanyag, dim_ido, dim_jarmuvek, dim_munkaero – mind definiált PK/FK/UNIQUE constraint-ekkel
-3 fact tábla: fact_tankolas, fact_tartaly_feltoltes, fact_anyagfelvetel – az eredeti 57 oszlopos összesítő tábla 3 logikai folyamatra bontva
-Adatmodell validálva MySQL Workbench EER diagramon – minden tábla kapcsolódik, nincsenek árva entitások.
+      Adatbázis tervezés
+      Az eredeti Excel struktúra elemzése alapján egy normalizált, csillag-séma alapú adatmodell született:
+      8 dimenzió tábla: dim_ceg, dim_lokacio, dim_tartaly, dim_fogyoanyag, dim_ido, dim_jarmuvek, dim_munkaero – mind definiált PK/FK/UNIQUE constraint-ekkel
+      3 fact tábla: fact_tankolas, fact_tartaly_feltoltes, fact_anyagfelvetel – az eredeti 57 oszlopos összesítő tábla 3 logikai folyamatra bontva
+      Adatmodell validálva MySQL Workbench EER diagramon – minden tábla kapcsolódik, nincsenek árva entitások.
 
-Nyitott kérdések / következő lépések
+      Nyitott kérdések / következő lépések
 
-Üzembentartó = tulajdonos kérdés egyelőre leegyszerűsítve, mindkét FK dim_ceg-re mutat
-Mobil tartály kettős természete (egyszerre jármű és tartály) dokumentálva, megoldás later
-Meglévő Excel adat migrációja Python scripttel – következő fázis
-Python FastAPI + HTML frontend építése a fact táblák adatbeviteléhez
+      Üzembentartó = tulajdonos kérdés egyelőre leegyszerűsítve, mindkét FK dim_ceg-re mutat
+      Mobil tartály kettős természete (egyszerre jármű és tartály) dokumentálva, megoldás later
+      Meglévő Excel adat migrációja Python scripttel – következő fázis
+      Python FastAPI + HTML frontend építése a fact táblák adatbeviteléhez
 
-MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench
+      MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench
 
 ------------------------------------------------------------------------------------------------------------------------------------------
 
 DAY 2 – Adatmodell finomítás & üzleti logika alapozás
-Dátum: 2026-05-05
+      Dátum: 2026-05-05
 
-Kontextus & szemléletváltás
-A nap első felében a DAY 1-en lefektetett CREATE scriptek átnézésre és finomításra kerültek három AI asszisztens párhuzamos bevonásával (Claude, Copilot, ChatGPT). Nevek, típusok, FK kapcsolatok pontosítása történt. Az adatmodell elvileg stabil, de a végleges validálás még folyamatban.
+      Kontextus & szemléletváltás
+      A nap első felében a DAY 1-en lefektetett CREATE scriptek átnézésre és finomításra kerültek három AI asszisztens párhuzamos bevonásával (Claude, Copilot, ChatGPT). Nevek, típusok, FK kapcsolatok pontosítása történt. Az adatmodell elvileg stabil, de a végleges validálás még folyamatban.
 
-Kulcsdöntés – trigger alapú védelem CHECK helyett
-A tervezés során felmerült egy alapvető üzleti kérdés: mennyire szigorú legyen az adatbázis szintű validáció?
-A döntés egyértelmű: a KKV környezet nem tűri az adat veszteséget. Egy hiányos rekord (pl. km érték nélküli tankolás) értékesebb mint egy be sem kerülő esemény. Ezért:
+      Kulcsdöntés – trigger alapú védelem CHECK helyett
+      A tervezés során felmerült egy alapvető üzleti kérdés: mennyire szigorú legyen az adatbázis szintű validáció?
+      A döntés egyértelmű: a KKV környezet nem tűri az adat veszteséget. Egy hiányos rekord (pl. km érték nélküli tankolás) értékesebb mint egy be sem kerülő esemény. Ezért:
 
-CHECK constraint-ek és szigorú NOT NULL kényszerek minimálisra csökkentve a fact táblákon
-Helyettük triggerek fogják kezelni a validációt – az adat bekerül, de a rendszer visszajelzést ad a hibás vagy hiányos értékekről
-A frontend (HTML) a trigger visszajelzéseket vizuálisan jelzi a kolléga felé, de nem blokkolja a mentést
-
-
-Üzleti logika példák trigger szinten (tervezés alatt)
-EseményTrigger viselkedésTankolás km érték nélkülRekord bekerül, warning flagNegatív literértékRekord bekerül, warning logHiányzó gépkezelőBekerül, jelzés a felületenTartály túltöltésBekerül, figyelmeztető üzenet
-
-Következő lépések
-
-CREATE scriptek véglegesítése
-Trigger logika tervezése fact táblánként
-Python FastAPI alapok + HTML form prototípus
+      CHECK constraint-ek és szigorú NOT NULL kényszerek minimálisra csökkentve a fact táblákon
+      Helyettük triggerek fogják kezelni a validációt – az adat bekerül, de a rendszer visszajelzést ad a hibás vagy hiányos értékekről
+      A frontend (HTML) a trigger visszajelzéseket vizuálisan jelzi a kolléga felé, de nem blokkolja a mentést
 
 
-Stack
-MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
+      Üzleti logika példák trigger szinten (tervezés alatt)
+      EseményTrigger viselkedésTankolás km érték nélkülRekord bekerül, warning flagNegatív literértékRekord bekerül, warning logHiányzó gépkezelőBekerül, jelzés a felületenTartály túltöltésBekerül, figyelmeztető üzenet
+
+      Következő lépések
+
+      CREATE scriptek véglegesítése
+      Trigger logika tervezése fact táblánként
+      Python FastAPI alapok + HTML form prototípus
+
+
+      Stack
+      MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
 
 
 DAY 3
 
-Indexek – audit összefoglaló
-A fact táblákon manuális indexek kerültek bevezetésre. A dim táblákon külön index nem szükséges, mivel ott minden szűrés PK vagy automatikusan létrehozott FK index alapján fut.
-A három fact táblán egységesen létrejött egy datum_id index az időszakos szűrésekhez, egy ervenyes index a trigger által megjelölt hibás rekordok gyors lekérdezéséhez, 
-valamint összetett tartaly_id + datum_id indexek a tartályonkénti időszakos riportokhoz. A fact_keszlet_kiadas táblán az eszkoz_sk külön indexet kapott a járműtörténet lekérdezések miatt. A fact_keszlet_mozgas-on a forrás és cél tartály is külön összetett indexet kapott, mivel mindkét irányból érkezhet lekérdezés.
-Copilot az összetett indexeket kiszórta volna KISS elv alapján, ChatGPT és Claude a riport lekérdezések várható mintázata miatt ezek megtartása mellett döntött. 
-Ha a rendszer adatmennyisége és lekérdezési igénye nem indokolja, az összetett indexek DROP INDEX-szel eltávolíthatók.
-A debarro rendszere a jelenlegi indexeket vélhetően igényelni fogja.
+      Indexek – audit összefoglaló
+      A fact táblákon manuális indexek kerültek bevezetésre. A dim táblákon külön index nem szükséges, mivel ott minden szűrés PK vagy automatikusan létrehozott FK index alapján fut.
+      A három fact táblán egységesen létrejött egy datum_id index az időszakos szűrésekhez, egy ervenyes index a trigger által megjelölt hibás rekordok gyors lekérdezéséhez, 
+      valamint összetett tartaly_id + datum_id indexek a tartályonkénti időszakos riportokhoz. A fact_keszlet_kiadas táblán az eszkoz_sk külön indexet kapott a járműtörténet lekérdezések miatt. A fact_keszlet_mozgas-on a forrás és cél tartály is külön összetett indexet kapott, mivel mindkét irányból érkezhet lekérdezés.
+      Copilot az összetett indexeket kiszórta volna KISS elv alapján, ChatGPT és Claude a riport lekérdezések várható mintázata miatt ezek megtartása mellett döntött. 
+      Ha a rendszer adatmennyisége és lekérdezési igénye nem indokolja, az összetett indexek DROP INDEX-szel eltávolíthatók.
+      A debarro rendszere a jelenlegi indexeket vélhetően igényelni fogja.
 
-Triggerek, Indexek, View-k – összefoglaló
-Triggerek
-Minden fact táblán egy összevont BEFORE INSERT trigger fut. A filozófia: az adat mindig bekerül, a trigger csak jelöl – ervenyes = FALSE és hiba_uzenet formájában. 
-Ez KKV környezetben tudatos döntés, az adatvesztés kerülendőbb mint a hibás rekord.
-trg_kiadas_validate – üzemóra és km lokális sorrend ellenőrzés, eszközönkénti km visszaesés detekció, kiadott liter vs számolt tartályegyenleg.
-trg_mozgas_validate – pisztoly óraállás vs mozgatott liter egyezés (NULL esetén átenged), forrás tartály egyenleg ellenőrzés, forrás/cél tartály anyag egyezés – kereszttöltés védelem.
-trg_bevet_validate – záró = kezdő + bejövő matematikai ellenőrzés (0.5L tűréshatárral), záró liter vs tartály fizikai kapacitás.
+      Triggerek, Indexek, View-k – összefoglaló
+      Triggerek
+      Minden fact táblán egy összevont BEFORE INSERT trigger fut. A filozófia: az adat mindig bekerül, a trigger csak jelöl – ervenyes = FALSE és hiba_uzenet formájában. 
+      Ez KKV környezetben tudatos döntés, az adatvesztés kerülendőbb mint a hibás rekord.
+      trg_kiadas_validate – üzemóra és km lokális sorrend ellenőrzés, eszközönkénti km visszaesés detekció, kiadott liter vs számolt tartályegyenleg.
+      trg_mozgas_validate – pisztoly óraállás vs mozgatott liter egyezés (NULL esetén átenged), forrás tartály egyenleg ellenőrzés, forrás/cél tartály anyag egyezés – kereszttöltés védelem.
+      trg_bevet_validate – záró = kezdő + bejövő matematikai ellenőrzés (0.5L tűréshatárral), záró liter vs tartály fizikai kapacitás.
 
 
 
-View-k
-vw_tartaly_egyenleg – tartályonkénti aktuális készletszint, befogadóképességgel és lokációval.
-vw_eszkoz_utolso_allapot – járművenként az utolsó rögzített km és üzemóra állás.
-vw_napi_kiadasok – napi aggregált kiadások tartály és anyag bontásban.
-vw_hibas_rekordok – mind 3 fact táblából egységes formátumban listázza a flagelt rekordokat. Ez lesz az audit dashboard alapja.
-vw_bevet_szallitokent – szállítónkénti bevételek súlyozott átlagárral. Division by zero védett.
+      View-k
+      vw_tartaly_egyenleg – tartályonkénti aktuális készletszint, befogadóképességgel és lokációval.
+      vw_eszkoz_utolso_allapot – járművenként az utolsó rögzített km és üzemóra állás.
+      vw_napi_kiadasok – napi aggregált kiadások tartály és anyag bontásban.
+      vw_hibas_rekordok – mind 3 fact táblából egységes formátumban listázza a flagelt rekordokat. Ez lesz az audit dashboard alapja.
+      vw_bevet_szallitokent – szállítónkénti bevételek súlyozott átlagárral. Division by zero védett.
 
-MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
+      MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench (not active using)
 
 DAY 4
 
-Python FastAPI integráció
-A backend Python FastAPI-ra épül, a DEBARRO-PYTHON mappában. Az adatbázis kapcsolatot a database.py 
-kezeli mysql-connector-python segítségével, a main.py tartalmazza az endpointokat.
-Telepítés:
-cmdpip install fastapi uvicorn mysql-connector-python
-Indítás:
-cd /d C:\projektek\debarro\DEBARRO-PYTHON && uvicorn main:app --reload
-Az API http://localhost:8000-en fut, a beépített interaktív dokumentáció http://localhost:8000/docs-on érhető el. 
-A --reload flag fejlesztés közben automatikusan újraindítja a szervert kódváltoztatás esetén.
-A database.py nem fut önállóan – az endpointok importálják szükség szerint. 
-A jelszót és kapcsolati adatokat ebben a fájlban kell karbantartani átköltöztetéskor.
-Következő fázis: dim táblák SELECT endpointjai a frontend dropdownokhoz, majd fact táblák INSERT endpointjai a három beviteli formhoz.
+      Python FastAPI integráció
+      A backend Python FastAPI-ra épül, a DEBARRO-PYTHON mappában. Az adatbázis kapcsolatot a database.py 
+      kezeli mysql-connector-python segítségével, a main.py tartalmazza az endpointokat.
+      Telepítés:
+      cmdpip install fastapi uvicorn mysql-connector-python
+      Indítás:
+      cd /d C:\projektek\debarro\DEBARRO-PYTHON && uvicorn main:app --reload
+      Az API http://localhost:8000-en fut, a beépített interaktív dokumentáció http://localhost:8000/docs-on érhető el. 
+      A --reload flag fejlesztés közben automatikusan újraindítja a szervert kódváltoztatás esetén.
+      A database.py nem fut önállóan – az endpointok importálják szükség szerint. 
+      A jelszót és kapcsolati adatokat ebben a fájlban kell karbantartani átköltöztetéskor.
+      Következő fázis: dim táblák SELECT endpointjai a frontend dropdownokhoz, majd fact táblák INSERT endpointjai a három beviteli formhoz.
 
- New stack function Fast API connector
+      New stack function Fast API connector
 
 DAY 5
 
-Dim táblák – GET endpointok
-Az adatbázis dimenzió tábláit a következő endpointokon lehet lekérdezni:
-EndpointTáblaGET /cegekdim_cegGET /tartalydim_tartalyGET /jarmudim_jarmuvekGET /alkalmazottdim_munkaeroGET /lokaciodim_lokacioGET /fogyoanyagdim_fogyoanyag
+      Dim táblák – GET endpointok
+      Az adatbázis dimenzió tábláit a következő endpointokon lehet lekérdezni:
+      EndpointTáblaGET /cegekdim_cegGET /tartalydim_tartalyGET /jarmudim_jarmuvekGET /alkalmazottdim_munkaeroGET /lokaciodim_lokacioGET /fogyoanyagdim_fogyoanyag
 
-Dátum dimenzió – generate_dates.py
-A dim_ido táblát Python script tölti fel. A database.py és generate_dates.py fájlokban ugyanazt a jelszót kell használni.
-cmdpython generate_dates.py
+      Dátum dimenzió – generate_dates.py
+      A dim_ido táblát Python script tölti fel. A database.py és generate_dates.py fájlokban ugyanazt a jelszót kell használni.
+      cmdpython generate_dates.py
 
-A datum_id formátuma YYYYMMDD (pl. 20260101) – klasszikus data warehouse konvenció.
-
-
-Triggerek telepítése
-A MySQL Workbench nem kezeli megbízhatóan a DELIMITER parancsot, ezért a triggereket CMD-ből kell telepíteni:
-mysql -u root -p debarro_uzemanyag < C:\projektek\debarro\DEBARRO-SQL\trigger.sql
-Ellenőrzés:
-sqlSHOW TRIGGERS FROM debarro_uzemanyag;
-
-Triggerek – validációs logika
-trg_bevet_validate
-
-záró - kezdő = bejövő (±0.5L tolerancia)
-Záró liter nem haladhatja meg a tartály kapacitását
-
-trg_kiadas_validate
-
-Gépüzemóra és KM aktuális értéke nem lehet kisebb mint az előző
-KM az adott eszköz utolsó rögzített értékénél sem lehet kisebb
-Kiadott liter nem haladhatja meg a tartály aktuális készletét¹
-
-trg_mozgas_validate
-
-Ha pisztoly óraállás meg van adva: aktuális - előző = mozgatott liter
-Mozgatott liter nem haladhatja meg a forrás tartály készletét¹
-Forrás és cél tartály anyaga meg kell egyezzen
+      A datum_id formátuma YYYYMMDD (pl. 20260101) – klasszikus data warehouse konvenció.
 
 
-¹ FIGYELMEZTETÉS módban – az adat bekerül, de a válaszban jelzi a készlethiányt. Ez lehetővé teszi az utólagos adatrögzítést.
+      Triggerek telepítése
+      A MySQL Workbench nem kezeli megbízhatóan a DELIMITER parancsot, ezért a triggereket CMD-ből kell telepíteni:
+      mysql -u root -p debarro_uzemanyag < C:\projektek\debarro\DEBARRO-SQL\trigger.sql
+      Ellenőrzés:
+      sqlSHOW TRIGGERS FROM debarro_uzemanyag;
+
+      Triggerek – validációs logika
+      trg_bevet_validate
+
+      záró - kezdő = bejövő (±0.5L tolerancia)
+      Záró liter nem haladhatja meg a tartály kapacitását
+
+      trg_kiadas_validate
+
+      Gépüzemóra és KM aktuális értéke nem lehet kisebb mint az előző
+      KM az adott eszköz utolsó rögzített értékénél sem lehet kisebb
+      Kiadott liter nem haladhatja meg a tartály aktuális készletét¹
+
+      trg_mozgas_validate
+
+      Ha pisztoly óraállás meg van adva: aktuális - előző = mozgatott liter
+      Mozgatott liter nem haladhatja meg a forrás tartály készletét¹
+      Forrás és cél tartály anyaga meg kell egyezzen
 
 
-Készlet számítás
-A triggerek minden műveletnél valós időben számolják az aktuális készletet:
-Aktuális készlet =
-    SUM(bevételezés.zaro_liter)
-  + SUM(beérkező mozgás)
-  - SUM(kimenő mozgás)
-  - SUM(kiadás.kiadott_liter)
-Csak ervenyes = 1 sorok számítanak bele.
+FIGYELMEZTETÉS módban – az adat bekerül, de a válaszban jelzi a készlethiányt. Ez lehetővé teszi az utólagos adatrögzítést.
+     "148 +   Fontos: a kiadas trigger Day 8-ban módosításra került – a készlethiány ott mostantól HIBA, nem figyelmeztetés (ld. Day 8).
+      149 +   A mozgas triggernél a 2%-os tűréshatáron belüli eltérés továbbra is csak figyelmeztetés marad."
 
-POST endpointok
-POST /keszlet-bevet
-json{
-  "datum": "2026-01-01",
-  "tartaly_szam": "10000/1",
-  "atvevo_nev": "Sáry László Endre",
-  "szallito_nev": "AVIA",
-  "kezdo_liter": 1000,
-  "bejovo_liter": 9000,
-  "zaro_liter": 10000,
-  "egysegar": 400,
-  "szamla_szam": "SZ-2026-001"
-}
-POST /keszlet-kiadas
-json{
-  "datum": "2026-01-01",
-  "kiado_szemely_nev": "Sáry László Endre",
-  "gepkezelo_nev": "Sáry László Endre",
-  "tartaly_szam": "1000/1",
-  "rendszam": "AACX-250",
-  "gepuzemora_eloz": 0,
-  "gepuzemora_akt": 50,
-  "km_eloz": 250,
-  "km_akt": 500,
-  "kiadott_liter": 70
-}
-POST /keszlet-mozgas
-json{
-  "datum": "2026-01-01",
-  "felvevo_nev": "Sáry László Endre",
-  "forras_tartaly_szam": "10000/1",
-  "cel_tartaly_szam": "1000/1",
-  "anyag_megnevezes": "Gázolaj",
-  "pisztoly_oraallas": null,
-  "mozgatott_liter": 180
-}
+        Készlet számítás
+        A triggerek minden műveletnél valós időben számolják az aktuális készletet:
+        Aktuális készlet =
+            SUM(bevételezés.zaro_liter)
+          + SUM(beérkező mozgás)
+          - SUM(kimenő mozgás)
+          - SUM(kiadás.kiadott_liter)
+        Csak ervenyes = 1 sorok számítanak bele.
 
-Response struktúra
-Minden POST endpoint ugyanolyan választ ad vissza:
-json{ "id": 1, "ervenyes": 1, "hiba_uzenet": null }
-ervenyeshiba_uzenetJelentés1nullSikeres, valid adat0"HIBA: ..."Trigger megakadályozta1"FIGYELMEZTETÉS: ..."Bekerült, de készlethiány van
+        POST endpointok
+        POST /keszlet-bevet
+        json{
+          "datum": "2026-01-01",
+          "tartaly_szam": "10000/1",
+          "atvevo_nev": "Sáry László Endre",
+          "szallito_nev": "AVIA",
+          "kezdo_liter": 1000,
+          "bejovo_liter": 9000,
+          "zaro_liter": 10000,
+          "egysegar": 400,
+          "szamla_szam": "SZ-2026-001"
+        }
+        POST /keszlet-kiadas
+        json{
+          "datum": "2026-01-01",
+          "kiado_szemely_nev": "Sáry László Endre",
+          "gepkezelo_nev": "Sáry László Endre",
+          "tartaly_szam": "1000/1",
+          "rendszam": "AACX-250",
+          "gepuzemora_eloz": 0,
+          "gepuzemora_akt": 50,
+          "km_eloz": 250,
+          "km_akt": 500,
+          "kiadott_liter": 70
+        }
+        POST /keszlet-mozgas
+        json{
+          "datum": "2026-01-01",
+          "felvevo_nev": "Sáry László Endre",
+          "forras_tartaly_szam": "10000/1",
+          "cel_tartaly_szam": "1000/1",
+          "anyag_megnevezes": "Gázolaj",
+          "pisztoly_oraallas": null,
+          "mozgatott_liter": 180
+        }
 
-Top used stack function  · SQL (MySQL Trigger overview/write)
+        Response struktúra
+        Minden POST endpoint ugyanolyan választ ad vissza:
+        json{ "id": 1, "ervenyes": 1, "hiba_uzenet": null }
+        ervenyeshiba_uzenetJelentés1nullSikeres, valid adat0"HIBA: ..."Trigger megakadályozta1"FIGYELMEZTETÉS: ..."Bekerült, de készlethiány van
+
+        Top used stack function  · SQL (MySQL Trigger overview/write)
 
 Day 6 Morning
-dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
-Triggerek újraírva – mindhárom trigger átírva hogy a dim_keszlet-et frissítse:
+      dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
+      Triggerek újraírva – mindhárom trigger átírva hogy a dim_keszlet-et frissítse:
 
-bevet → forrás tartály + bejovo_liter
-kiadas → tartály - kiadott_liter
-mozgas → forrás - mozgatott_liter, cél + mozgatott_liter
+      bevet → forrás tartály + bejovo_liter
+      kiadas → tartály - kiadott_liter
+      mozgas → forrás - mozgatott_liter, cél + mozgatott_liter
 
-2% tolerancia – kapacitás ellenőrzésnél:
+      2% tolerancia – kapacitás ellenőrzésnél:
 
-0% - 2% között → FIGYELMEZTETÉS, készlet frissül
-2% felett → HIBA, készlet nem frissül
+      0% - 2% között → FIGYELMEZTETÉS, készlet frissül
+      2% felett → HIBA, készlet nem frissül
 
-Pisztoly óraállás átrakva fact_keszlet_mozgas → fact_keszlet_kiadas-ba, mert ott keletkezik az adat.
-GitHub – private repo létrehozva, projekt feltöltve.
-dotenv – database.py átírva, jelszó .env fájlba kerül, .gitignore beállítva.
+      Pisztoly óraállás átrakva fact_keszlet_mozgas → fact_keszlet_kiadas-ba, mert ott keletkezik az adat.
+      GitHub – private repo létrehozva, projekt feltöltve.
+      dotenv – database.py átírva, jelszó .env fájlba kerül, .gitignore beállítva.
 
-New stack option GitBash for Github push + verzió követés. Dotenv for database config
+      New stack option GitBash for Github push + verzió követés. Dotenv for database config
 
 Day 6 Afternoon – React Frontend
-Telepítés
-Node.js – szükséges előfeltétel:
-https://nodejs.org/en  (LTS verzió)
-React app létrehozása:
-cmdcd /d C:\projektek\debarro
-npx create-react-app debarro-frontend
-cd debarro-frontend
-npm start
-Szerver indítása
-Két CMD ablak szükséges egyszerre:
-1. FastAPI:
-cd /d C:\projektek\debarro\DEBARRO-PYTHON
-uvicorn main:app --reload
-2. React:
-cd /d C:\projektek\debarro\debarro-frontend
-npm start
-SzerverURLReact frontendhttp://localhost:3000FastAPI backendhttp://localhost:8000API docshttp://localhost:8000/docs
-CORS beállítás
-A main.py-ban szükséges a React–FastAPI kommunikációhoz:
-pythonfrom fastapi.middleware.cors import CORSMiddleware
+      Telepítés
+      Node.js – szükséges előfeltétel:
+      https://nodejs.org/en  (LTS verzió)
+      React app létrehozása:
+      cmdcd /d C:\projektek\debarro
+      npx create-react-app debarro-frontend
+      cd debarro-frontend
+      npm start
+      Szerver indítása
+      Két CMD ablak szükséges egyszerre:
+      1. FastAPI:
+      cd /d C:\projektek\debarro\DEBARRO-PYTHON
+      uvicorn main:app --reload
+      2. React:
+      cd /d C:\projektek\debarro\debarro-frontend
+      npm start
+      SzerverURLReact frontendhttp://localhost:3000FastAPI backendhttp://localhost:8000API docshttp://localhost:8000/docs
+      CORS beállítás
+      A main.py-ban szükséges a React–FastAPI kommunikációhoz:
+      pythonfrom fastapi.middleware.cors import CORSMiddleware
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-dotenv javítás
-A database.py-ban explicit meg kell adni a fájlnevet:
-pythonload_dotenv("validate.env")
-Első form – Készlet Bevételezés
-src/App.js – React form amely:
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["http://localhost:3000"],
+          allow_methods=["*"],
+          allow_headers=["*"],
+      )
+      dotenv javítás
+      A database.py-ban explicit meg kell adni a fájlnevet:
+      pythonload_dotenv("validate.env")
+      Első form – Készlet Bevételezés
+      src/App.js – React form amely:
 
-Lekéri a dim táblákat dropdown-okhoz (/tartaly, /alkalmazott, /cegek)
-POST /keszlet-bevet endpointot hívja
-Sikeres rögzítésnél zöld, hibánál piros visszajelzést ad
+      Lekéri a dim táblákat dropdown-okhoz (/tartaly, /alkalmazott, /cegek)
+      POST /keszlet-bevet endpointot hívja
+      Sikeres rögzítésnél zöld, hibánál piros visszajelzést ad
 
 
-New tool --> · REACT for frontend · Node.js (Must have)
+      New tool --> · REACT for frontend · Node.js (Must have)
 
 Day 7 morning – React frontend fejlesztés
-Ma reggel nekiálltunk a frontend csiszolásának és átszervezésének.
-Ant Design dark theme – lecseréltük az alap React stílust Ant Design komponensekre, dark theme-mel. Sokkal emberibb lett a kinézet.
-Ékezet fix – a trigger hibaüzenetekből kivettük az összes ékezetes karaktert, mert a MySQL nem adta vissza rendesen UTF-8-ban. 
-Egyszerűbb volt a forrásnál javítani mint küzdeni az enkódolással.
-Bevételezés form fejlesztés:
+      Ma reggel nekiálltunk a frontend csiszolásának és átszervezésének.
+      Ant Design dark theme – lecseréltük az alap React stílust Ant Design komponensekre, dark theme-mel. Sokkal emberibb lett a kinézet.
+      Ékezet fix – a trigger hibaüzenetekből kivettük az összes ékezetes karaktert, mert a MySQL nem adta vissza rendesen UTF-8-ban. 
+      Egyszerűbb volt a forrásnál javítani mint küzdeni az enkódolással.
+      Bevételezés form fejlesztés:
 
-Tartály választásnál automatikusan megjelenik az aktuális készlet
-Kezdő liter mező automatikusan kitöltődik az aktuális készlettel
-Záró liter mezőnél látszik a max kapacitás
-Zöld/sárga/piros visszajelzés aszerint hogy sikeres, figyelmeztetéses vagy blokkolt volt a rögzítés
+      Tartály választásnál automatikusan megjelenik az aktuális készlet
+      Kezdő liter mező automatikusan kitöltődik az aktuális készlettel
+      Záró liter mezőnél látszik a max kapacitás
+      Zöld/sárga/piros visszajelzés aszerint hogy sikeres, figyelmeztetéses vagy blokkolt volt a rögzítés
 
-Komponens átszervezés – az App.js lett a "váz" (dark theme, config), a bevételezés form kikerült egy külön Bevetelezesform.js fájlba. 
-Létrehoztuk a Kiadasform.js és Mozgasform.js placeholder fájlokat is – ezek jönnek következőnek.
+      Komponens átszervezés – az App.js lett a "váz" (dark theme, config), a bevételezés form kikerült egy külön Bevetelezesform.js fájlba. 
+      Létrehoztuk a Kiadasform.js és Mozgasform.js placeholder fájlokat is – ezek jönnek következőnek.
 
 
 -- Tanulság – Disabled Input és Form adatok
-Mi volt a probléma:
-A mozgás formnál az anyag mezőt disabled Input-ként jelenítettem meg – így a felhasználó nem tudja szerkeszteni, csak látja az értéket. Viszont egy disabled Input nem kerül bele a form adataiba amikor elküldjük – ezért érkezett üres anyag_megnevezes a backendre és dobta a 422-es hibát.
-A tanulság:
-React-ban (és általában frontenden) különbség van a között amit megjelenítesz és amit elküldesz. Ha egy mező csak megjelenítésre való, az értéket a payload-ban kézzel kell hozzáadni a form adatokhoz.
-Megoldás:
-javascript// ROSSZ - values.anyag_megnevezes üres lesz
-anyag_megnevezes: values.anyag_megnevezes,
+  Mi volt a probléma:
+  A mozgás formnál az anyag mezőt disabled Input-ként jelenítettem meg – így a felhasználó nem tudja szerkeszteni, csak látja az értéket. Viszont egy disabled Input nem kerül bele a form adataiba amikor elküldjük – ezért érkezett üres anyag_megnevezes a backendre és dobta a 422-es hibát.
+  A tanulság:
+  React-ban (és általában frontenden) különbség van a között amit megjelenítesz és amit elküldesz. Ha egy mező csak megjelenítésre való, az értéket a payload-ban kézzel kell hozzáadni a form adatokhoz.
+  Megoldás:
+  javascript// ROSSZ - values.anyag_megnevezes üres lesz
+  anyag_megnevezes: values.anyag_megnevezes,
 
-// JÓ - a tartály adatból vesszük ki
-anyag_megnevezes: tartalyok.find(t => t.tartaly_szam === values.forras_tartaly_szam)?.anyag_megnevezes || "",
-Ökölszabály: Ha egy mező disabled vagy csak info célú → az értékét a payload-ban mindig külön add hozzá, ne a values-ból vedd! -- 
+  // JÓ - a tartály adatból vesszük ki
+  anyag_megnevezes: tartalyok.find(t => t.tartaly_szam === values.forras_tartaly_szam)?.anyag_megnevezes || "",
+  Ökölszabály: Ha egy mező disabled vagy csak info célú → az értékét a payload-ban mindig külön add hozzá, ne a values-ból vedd! -- 
 
-!! Technikai adósság – dim táblák aktív/inaktív kezelése
-Minden dim táblába kelleni fog egy aktiv oszlop. Ha egy entitás kikerül a rendszerből (alkalmazott kilép, jármű selejtezés, tartály csere) – az adat megmarad a fact táblákban de a formokban már ne jelenjen meg.
-Érintett táblák: dim_tartaly, dim_jarmuvek, dim_munkaero, dim_ceg, dim_lokacio, dim_fogyoanyag !!
+  !! Technikai adósság – dim táblák aktív/inaktív kezelése
+  Minden dim táblába kelleni fog egy aktiv oszlop. Ha egy entitás kikerül a rendszerből (alkalmazott kilép, jármű selejtezés, tartály csere) – az adat megmarad a fact táblákban de a formokban már ne jelenjen meg.
+  Érintett táblák: dim_tartaly, dim_jarmuvek, dim_munkaero, dim_ceg, dim_lokacio, dim_fogyoanyag !!
 
 
 Day 7 – Afternoon Formok véglegesítése
-A három beviteli form (Bevételezés, Mozgás, Kiadás) demo szinten kész.
-Kiadás form fejlesztés:
+    A három beviteli form (Bevételezés, Mozgás, Kiadás) demo szinten kész.
+    Kiadás form fejlesztés:
 
-Jármű választásnál automatikusan behúzza az aktuális km és üzemóra értékeket a dim_jarmuvek_allapot táblából
-Sikeres rögzítés után azonnal frissül az előző km/üzemóra érték – dupla bevitel ellen védett
-Optional[float] típus a nem kötelező mezőkre (gepuzemora, km, pisztoly)
+    Jármű választásnál automatikusan behúzza az aktuális km és üzemóra értékeket a dim_jarmuvek_allapot táblából
+    Sikeres rögzítés után azonnal frissül az előző km/üzemóra érték – dupla bevitel ellen védett
+    Optional[float] típus a nem kötelező mezőkre (gepuzemora, km, pisztoly)
 
-Demo státusz: A három form működőképes, validációval és visszajelzéssel. Az ezen felüli fejlesztések már teszt/éles fázishoz tartoznak.
+ 
+ +Demo státusz: A három form működőképes, validációval és visszajelzéssel. Az ezen felüli fejlesztések már teszt/éles fázishoz tartoznak.
+      309 +
+      310 +------------------------------------------------------------------------------------------------------------------------------------------
+      311 +
+      312 +DAY 8 – Kódellenőrzés, hibajavítások, előzmény nézet
+      313 +Dátum: 2026-05-18
+      314 +
+      315 +Teljes kódátvizsgálás
+      316 +A teljes rendszer (SQL séma, triggerek, view-k, Python backend, React frontend) átvizsgálásra került.
+      317 +Három konkrét hiba azonosítódott és javításra került, valamint egy új frontend oldal készült el.
+      318 +
+      319 +Javítások
+      320 +
+      321 +1. vw_tartaly_egyenleg view – háromféle hiba volt benne egyszerre:
+      322 +   - A bevételezett mennyiséget a zaro_liter összegezte, holott a helyes érték a bejovo_liter.
+      323 +     (A zaro_liter a tartály szintje a szállítás után, nem maga a szállított mennyiség.)
+      324 +   - A fact_keszlet_mozgas tábla teljesen hiányzott a számításból, tehát a tartályok közti
+      325 +     átmozgatások egyáltalán nem szerepeltek az egyenlegben.
+      326 +   - Nem szűrt ervenyes = TRUE feltételre, így a hibás/blokkolt rekordok is beleszámítottak.
+      327 +   A javított view az aktualis_liter értéket a dim_keszlet táblából veszi (trigger által karbantartott,
+      328 +   hiteles forrás), a historikus összesítők (ossz_bevet, ossz_kiadott, ossz_mozgas_ki, ossz_mozgas_be)
+      329 +   mind csak ervenyes = TRUE rekordokat számolnak, és a mozgás mindkét iránya (forrás és cél) szerepel.
+      330 +   sql
+      331 +   CREATE OR REPLACE VIEW vw_tartaly_egyenleg AS ...
+      332 +   (ld. DEBARRO-SQL/view.sql)
+      333 +
+      334 +2. trg_kiadas_validate – defense limit: figyelmeztetésből hiba
+      335 +   A trigger korábban csak FIGYELMEZTETÉS-t adott ha a kiadott liter meghaladta az aktuális készletet,
+      336 +   de az ervenyes flag TRUE maradt. Emiatt a készlet frissítés is lefutott és a dim_keszlet.aktualis_liter
+      337 +   negatívba mehetett – ami fizikailag értelmetlen (nem lehet több üzemanyagot kiadni mint amennyi van).
+      338 +   A javítás után: ha kiadott_liter > aktualis_liter → ervenyes = FALSE, HIBA üzenet, és a készlet
+      339 +   frissítés blokkolva. A dim_keszlet soha nem mehet negatívba kiadás miatt.
+      340 +   Az érintett lábjegyzet (¹) a Day 5-ben frissítve.
+      341 +
+      342 +3. Trigger újratelepítés a változás után:
+      343 +   cmd
+      344 +   mysql -u root -p debarro_uzemanyag < C:\projektek\debarro\DEBARRO-SQL\trigger.sql
+      345 +
+      346 +Új frontend oldal – Tranzakció-előzmények (Tranzakciok.js)
+      347 +Eddig csak rögzíteni lehetett adatot, visszanézni nem. Elkészült az Előzmények oldal.
+      348 +
+      349 +Elérhető: az App.js navigációban a "Előzmények" gombbal (negyedik oldal a körforgásban).
+      350 +
+      351 +Szűrők:
+      352 +- Tartály dropdown – összes tartály vagy egy kiválasztott
+      353 +- Dátum intervallum – alapértelmezés az utolsó 30 nap
+      354 +
+      355 +Három fül:
+      356 +- Kiadások – kiadó, gépkezelő, rendszám, km és üzemóra változás, kiadott liter, állapot
+      357 +- Bevételezések – átvevő, szállító, kezdő/bejövő/záró liter, egységár, számla, állapot
+      358 +- Mozgások – forrás és cél tartály, felvevő, anyag, mozgatott liter, állapot
+      359 +
+      360 +Az állapot oszlopban zöld OK / sárga Figyelmeztetés / piros Hibás jelzés látható.
+      361 +A füleken a rekordszám folyamatosan frissül a szűrés alapján.
+      362 +Szűrőváltozásra automatikusan újratölt, lapozás 20 soronként.
+      363 +
+      364 +Új API endpointok (main.py):
+      365 +GET /tranzakciok/kiadas?tartaly_id=&datum_tol=&datum_ig=
+      366 +GET /tranzakciok/bevet?tartaly_id=&datum_tol=&datum_ig=
+      367 +GET /tranzakciok/mozgas?tartaly_id=&datum_tol=&datum_ig=
+      368 +Mindhárom max 500 sort ad vissza, legújabb dátum szerint rendezve.
+      369 +A mozgas endpointnál a tartaly_id szűrés forras és cel irányra is vonatkozik.
+      370 +
+      371 +Indítószkript – start_debarro.bat
+      372 +A projekt gyökerében létrejött egy start_debarro.bat fájl.
+      373 +Dupla kattintásra két külön CMD ablakot nyit: egyet a FastAPI szervernek, egyet a React frontendnek.
+      374 +Kézi terminálkezelés ettől felesleges a fejlesztés során.
+      375 +
+      376 +Érintett fájlok:
+      377 +DEBARRO-SQL/view.sql        – vw_tartaly_egyenleg újraírva
+      378 +DEBARRO-SQL/trigger.sql     – trg_kiadas_validate defense limit javítva
+      379 +DEBARRO-PYTHON/main.py      – 3 új GET endpoint hozzáadva
+      380 +debarro-frontend/src/Tranzakciok.js  – új komponens
+      381 +debarro-frontend/src/App.js          – negyedik oldal bekötve
+      382 +start_debarro.bat                    – új indítószkript
