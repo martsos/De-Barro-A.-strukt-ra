@@ -87,7 +87,7 @@ function Kiadasform() {
     setLoading(false);
   };
 
-  // Tank fill level
+  // Tank lvl
   const tankPct = aktualisKeszlet !== null && tartalyKapacitas
     ? Math.min(100, Math.round((aktualisKeszlet / tartalyKapacitas) * 100))
     : null;
@@ -126,18 +126,11 @@ function Kiadasform() {
           </Form>
         </div>
 
-        {/* ── MAIN FORM ──────────────────────────────────── */}
-        {/*
-          We need one Form that wraps everything, including the DatePicker above.
-          The approach: render the entire Form here, but split the visual sections.
-          Since JSX renders sequentially we achieve the layout via the structure below.
-        */}
+        {/* ── Főoldali FORM ──────────────────────────────────── */}
+      
         <Form form={form} layout="vertical" onFinish={onFinish} className="kd-form">
 
-          {/* Hidden duplicate — datum is declared above in its own Form; this is the real one */}
-          {/* Actually: we cannot have two Forms. Instead, we inline everything in one Form. */}
-
-          {/* SECTION: SZEMÉLYEK */}
+          {/* Szekció: SZEMÉLYEK */}
           <div className="kd-section">Személyek</div>
           <Row gutter={12}>
             <Col span={12}>
@@ -164,7 +157,7 @@ function Kiadasform() {
             </Col>
           </Row>
 
-          {/* SECTION: TARTÁLY */}
+          {/* Szekció: TARTÁLY */}
           <div className="kd-section">Tartály</div>
           <Form.Item name="tartaly_szam" rules={[{ required: true }]}
             style={{ marginBottom: tankPct !== null ? 10 : 16 }}>
@@ -200,7 +193,7 @@ function Kiadasform() {
             </div>
           )}
 
-          {/* SECTION: JÁRMŰ */}
+          {/* Szekció: JÁRMŰ */}
           <div className="kd-section" style={{ marginTop: tankPct !== null ? 22 : 0 }}>
             Jármű
           </div>
@@ -233,7 +226,7 @@ function Kiadasform() {
             </div>
           )}
 
-          {/* SECTION: MÉRŐADATOK */}
+          {/* Szekció: MÉRŐADATOK */}
           <div className="kd-section" style={{ marginTop: vehicleInfo ? 22 : 0 }}>
             Mérőadatok
           </div>
@@ -271,7 +264,7 @@ function Kiadasform() {
             <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>
 
-          {/* FEATURED: KIADOTT LITER */}
+          {/* KIADOTT LITER */}
           <Divider style={{ borderColor: "rgba(249,115,22,0.15)", margin: "20px 0 16px" }} />
           <div className="kd-liter-wrap">
             <Text className="kd-liter-label">Kiadott mennyiség</Text>
@@ -285,7 +278,7 @@ function Kiadasform() {
             </Form.Item>
           </div>
 
-          {/* SUBMIT */}
+          {/* Rögzítés */}
           <Form.Item style={{ marginTop: 20, marginBottom: 0 }}>
             <Button
               type="primary"
@@ -300,7 +293,7 @@ function Kiadasform() {
 
         </Form>
 
-        {/* RESULT */}
+        {/* Eredmény */}
         {eredmeny && (
           <div className="kd-result">
             <Alert

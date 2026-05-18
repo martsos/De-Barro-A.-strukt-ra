@@ -5,9 +5,11 @@ import Kiadasform from "./Kiadasform.js";
 import Mozgasform from "./Mozgasform.js";
 import Tranzakciok from "./Tranzakciok.js";
 import Dashboard from "./Dashboard.js";
+import Dimenziak from "./Dimenziak.js";
 import "./App.css";
 
-const pages = ["dashboard", "kiadas", "mozgas", "bevet", "tortenelem"];
+
+const pages = ["dashboard", "kiadas", "mozgas", "bevet", "tortenelem", "dimenziak"];
 
 const pageLabels = {
   dashboard:  "🏠 Áttekintés",
@@ -15,6 +17,7 @@ const pageLabels = {
   mozgas:     "🔄 Mozgás",
   bevet:      "📥 Bevételezés",
   tortenelem: "📋 Előzmények",
+  dimenziak:  "📊 Dimenziák",
 };
 
 function App() {
@@ -51,6 +54,7 @@ function App() {
           {activePage === "mozgas"     && <Mozgasform />}
           {activePage === "bevet"      && <Bevetelezesform />}
           {activePage === "tortenelem" && <Tranzakciok />}
+          {activePage === "dimenziak" && <Dimenziak />}
         </div>
 
       </div>

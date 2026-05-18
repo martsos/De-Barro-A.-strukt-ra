@@ -67,7 +67,7 @@ def get_jarmuvek_allapot():
 def get_munkaero():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT foglalkoztatott_id, foglalkoztatott_nev FROM dim_munkaero")
+    cursor.execute("SELECT foglalkoztatott_id, foglalkoztatott_nev, allapot FROM dim_munkaero")
     result = cursor.fetchall()
     conn.close()
     return result
@@ -430,3 +430,133 @@ def get_mozgas_lista(
     result = cursor.fetchall()
     conn.close()
     return result
+
+    # ─── DIM TÖRZSADAT ENDPOINTOK ──────────────────────────────────
+
+class UjAlkalmazott(BaseModel):
+    foglalkoztatott_nev: str
+    foglalkoztatas_tipusa: Optional[str] = None
+    foglalkoztato_nev: Optional[str] = None  # lookup → ceg_id
+
+class UjJarmu(BaseModel):
+    eszkoz_kategoria: str  # kötelező!
+    rendszam: Optional[str] = None
+    eszkoz_id: Optional[str] = None
+    megnevezes: Optional[str] = None
+    gyartmany: Optional[str] = None
+    tipus: Optional[str] = None
+    eroforras_fajta: Optional[str] = None
+
+class UjTartaly(BaseModel):
+    tartaly_szam: str
+    tartaly_tipus: str  # FIX/MOBIL/KANNA
+    befogado_kepesseg_l: float
+    anyag_megnevezes: str   # lookup
+    lokacio_nev: str        # lookup → tartaly_lokacio_id
+    egyeb_alapadatok: Optional[str] = None
+
+class AllapotAdat(BaseModel):
+    allapot: str  # 'AKTÍV' vagy 'INAKTÍV'
+
+@app.post("/alkalmazott")
+def post_alkalmazott(adat: UjAlkalmazott):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "INSERT INTO dim_munkaero (foglalkoztatott_nev, foglalkoztatas_tipusa, allapot) VALUES (%s, %s, 'AKTÍV')",
+        (adat.foglalkoztatott_nev, adat.foglalkoztatas_tipusa)
+    )
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return {"foglalkoztatott_id": new_id, "foglalkoztatott_nev": adat.foglalkoztatott_nev, "allapot": "AKTÍV"}
+
+@app.patch("/alkalmazott/{id}/allapot")
+def patch_alkalmazott_allapot(id: int, adat: AllapotAdat):
+    if adat.allapot not in ("AKTÍV", "INAKTÍV"):
+        raise HTTPException(status_code=400, detail="Érvénytelen állapot")
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "UPDATE dim_munkaero SET allapot = %s WHERE foglalkoztatott_id = %s",
+        (adat.allapot, id)
+    )
+    conn.commit()
+    conn.close()
+    return {"foglalkoztatott_id": id, "allapot": adat.allapot}
+
+@app.post("/jarmu")
+def post_jarmu(adat: UjJarmu):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        INSERT INTO dim_jarmuvek 
+            (eszkoz_kategoria, rendszam, eszkoz_id, megnevezes, gyartmany, tipus, eroforras_fajta, allapot)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'AKTÍV')
+    """, (
+        adat.eszkoz_kategoria, adat.rendszam, adat.eszkoz_id,
+        adat.megnevezes, adat.gyartmany, adat.tipus, adat.eroforras_fajta
+    ))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return {"eszkoz_sk": new_id, "rendszam": adat.rendszam, "allapot": "AKTÍV"}
+
+@app.patch("/jarmu/{id}/allapot")
+def patch_jarmu_allapot(id: int, adat: AllapotAdat):
+    if adat.allapot not in ("AKTÍV", "INAKTÍV"):
+        raise HTTPException(status_code=400, detail="Érvénytelen állapot")
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "UPDATE dim_jarmuvek SET allapot = %s WHERE eszkoz_sk = %s",
+        (adat.allapot, id)
+    )
+    conn.commit()
+    conn.close()
+    return {"eszkoz_sk": id, "allapot": adat.allapot}
+
+
+
+@app.post("/tartaly")
+def post_tartaly(adat: UjTartaly):
+    if adat.tartaly_tipus not in ("FIX", "MOBIL", "KANNA"):
+        raise HTTPException(status_code=400, detail="Érvénytelen típus: FIX, MOBIL vagy KANNA lehet")
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT anyag_id FROM dim_fogyoanyag WHERE anyag_megnevezes = %s", (adat.anyag_megnevezes,))
+    sor = cursor.fetchone()
+    if not sor:
+        raise HTTPException(status_code=404, detail=f"Anyag nem található: {adat.anyag_megnevezes}")
+    anyag_id = sor["anyag_id"]
+    cursor.execute("SELECT lokacio_id FROM dim_lokacio WHERE lokacio_nev = %s", (adat.lokacio_nev,))
+    sor = cursor.fetchone()
+    if not sor:
+        raise HTTPException(status_code=404, detail=f"Lokáció nem található: {adat.lokacio_nev}")
+    lokacio_id = sor["lokacio_id"]
+    cursor.execute("""
+        INSERT INTO dim_tartaly 
+            (tartaly_szam, tartaly_tipus, befogado_kepesseg_l, anyag_id, tartaly_lokacio_id, egyeb_alapadatok, allapot)
+        VALUES (%s, %s, %s, %s, %s, %s, 'AKTÍV')
+    """, (
+        adat.tartaly_szam, adat.tartaly_tipus, adat.befogado_kepesseg_l,
+        anyag_id, lokacio_id, adat.egyeb_alapadatok
+    ))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return {"tartaly_id": new_id, "tartaly_szam": adat.tartaly_szam, "allapot": "AKTÍV"}
+
+@app.patch("/tartaly/{id}/allapot")
+def patch_tartaly_allapot(id: int, adat: AllapotAdat):
+    if adat.allapot not in ("AKTÍV", "INAKTÍV"):
+        raise HTTPException(status_code=400, detail="Érvénytelen állapot")
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "UPDATE dim_tartaly SET allapot = %s WHERE tartaly_id = %s",
+        (adat.allapot, id)
+    )
+    conn.commit()
+    conn.close()
+    return {"tartaly_id": id, "allapot": adat.allapot}

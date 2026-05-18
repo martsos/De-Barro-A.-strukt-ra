@@ -288,3 +288,15 @@ ADD COLUMN pisztoly_oraallas DECIMAL(10,2) NULL AFTER km_akt;
 
 ALTER TABLE fact_keszlet_mozgas 
 DROP COLUMN pisztoly_oraallas;
+
+ALTER TABLE dim_munkaero 
+ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV' 
+CHECK (allapot IN ('AKTÍV','INAKTÍV'));
+
+ALTER TABLE dim_tartaly 
+ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV' 
+CHECK (allapot IN ('AKTÍV','INAKTÍV'));
+
+ALTER TABLE dim_jarmuvek 
+ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV' 
+CHECK (allapot IN ('AKTÍV','INAKTÍV'));
