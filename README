@@ -379,3 +379,64 @@ Day 7 – Afternoon Formok véglegesítése
       380 +debarro-frontend/src/Tranzakciok.js  – új komponens
       381 +debarro-frontend/src/App.js          – negyedik oldal bekötve
       382 +start_debarro.bat                    – új indítószkript
+
+      ------------------------------------------------------------------------------------------------------------------------------------------
+
+DAY 9 – Törzsadat-kezelés (Torzsadatok.js)
+Dátum: 2026-05-20
+
+Cél
+Egy központosított adminisztrációs oldal, ahol minden dim tábla egy helyen kezelhető.
+Alapelv: ID-k soha nem törlődnek – csak AKTÍV / INAKTÍV állapot között válthatók.
+
+Adatbázis módosítások
+A korábban állapot nélküli három dim táblához hozzáadásra került az allapot oszlop:
+
+    ALTER TABLE dim_ceg        ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+    ALTER TABLE dim_lokacio    ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+    ALTER TABLE dim_fogyoanyag ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+
+Így minden dim tábla egységesen kezeli az aktivitást:
+dim_munkaero, dim_tartaly, dim_jarmuvek, dim_ceg, dim_lokacio, dim_fogyoanyag.
+
+Kezelt törzsadatok és mezőik
+
+    Alkalmazottak (dim_munkaero)   – név, foglalkoztatás típusa, foglalkoztató cég, munkaóra
+    Járművek (dim_jarmuvek)        – rendszám, belső ID, kategória, De Barro csop., megnevezés,
+                                     gyártmány, típus, üzemanyag, alvázszám, üzembentartó, tulajdonos
+    Tartályok (dim_tartaly)        – tartályszám, típus (FIX/MOBIL/KANNA), kapacitás,
+                                     anyag (FK), lokáció (FK), egyéb adatok
+    Cégek (dim_ceg)                – cég neve, tulajdonos neve, kapcsolattartó, egyéb
+    Lokációk (dim_lokacio)         – lokáció neve, helyrajzi szám, GPS koordináták
+    Fogyóanyagok (dim_fogyoanyag)  – megnevezés, kategória, tulajdonos cég (FK)
+
+Működés a felületen
+Az oldal hat fülből áll (Ant Design Tabs). Minden fülön:
+
+    Táblázat         – minden schema oszlop megjelenik, vízszintesen görgethetően.
+    Inaktív szűrő    – globális kapcsoló a fejlécben; alapból csak az aktív rekordok látszanak,
+                       az inaktívak halványítva jelennek meg ha be van kapcsolva.
+    Új felvétel gomb – modális ablakot nyit, kötelező mezők validációval.
+    Szerkesztés gomb – ugyanaz a modal, előre kitöltve a meglévő adatokkal.
+    Aktív/Inaktív    – azonnali állapotváltás, az ID a táblában marad.
+
+Lookup mezők
+A Tartály és Fogyóanyag formokban a kapcsolódó entitások (lokáció, anyag, cég)
+kereshető legördülőből választhatók, mindig csak az aktív bejegyzések közül.
+
+API bővítések (main.py)
+
+    GET  /torzsadat/{entity}      – teljes részletességű listázás JOIN-okkal (6 db)
+    POST /{entity}                – új rekord hozzáadása (ceg, lokacio, fogyoanyag – új)
+    PATCH /{entity}/{id}          – teljes rekord szerkesztése (6 db – új)
+    PATCH /{entity}/{id}/allapot  – csak állapotváltás (ceg, lokacio, fogyoanyag – új)
+
+Hibajavítás
+POST /alkalmazott korábban figyelmen kívül hagyta a foglalkoztato_nev mezőt –
+az FK sosem lett beírva az adatbázisba. Javítva.
+
+Érintett fájlok:
+    DEBARRO-SQL/shema.sql                – 3 ALTER TABLE dokumentálva
+    DEBARRO-PYTHON/main.py               – 13 új endpoint, modellek bővítve
+    debarro-frontend/src/Torzsadatok.js  – teljes új komponens
+    debarro-frontend/src/Torzsadatok.css – új stílusfájl (orange dark theme)
