@@ -1,12 +1,12 @@
-
--- FACT_KESZLET_KIADAS VALIDÁCIÓ
+-------------------------------------ÜZEMANYAG TRIGGEREK---------------------------------------------
+-- ua_fact_keszlet_kiadas VALIDÁCIÓ
 
 DELIMITER $$
 
 DROP TRIGGER IF EXISTS trg_kiadas_validate$$
 
 CREATE TRIGGER trg_kiadas_validate
-BEFORE INSERT ON fact_keszlet_kiadas
+BEFORE INSERT ON ua_fact_keszlet_kiadas
 FOR EACH ROW
 BEGIN
     DECLARE utolso_km DECIMAL(10,2);
@@ -32,7 +32,7 @@ BEGIN
 
     -- 2. ESZKÖZ SZINTŰ KM
     SELECT km_akt INTO utolso_km
-    FROM fact_keszlet_kiadas
+    FROM ua_fact_keszlet_kiadas
     WHERE eszkoz_sk = NEW.eszkoz_sk
       AND km_akt IS NOT NULL
     ORDER BY datum_id DESC, kiadas_id DESC
@@ -50,7 +50,7 @@ BEGIN
     -- 3. PISZTOLY ÓRAÁLLÁS
 
     SELECT pisztoly_oraallas INTO utolso_pisztoly
-    FROM fact_keszlet_kiadas
+    FROM ua_fact_keszlet_kiadas
     WHERE tartaly_id = NEW.tartaly_id
       AND pisztoly_oraallas IS NOT NULL
     ORDER BY datum_id DESC, kiadas_id DESC
@@ -70,7 +70,7 @@ BEGIN
     -- 4. DEFENSE LIMIT — over-issue is an error, not a warning,
     --    so the inventory update below is blocked and cannot go negative
     SELECT aktualis_liter INTO defense_limit
-    FROM dim_keszlet
+    FROM ua_dim_keszlet
     WHERE tartaly_id = NEW.tartaly_id;
 
     IF defense_limit IS NOT NULL
@@ -83,7 +83,7 @@ BEGIN
 
     -- 5. KÉSZLET FRISSÍTÉS
     IF NEW.ervenyes = TRUE THEN
-        UPDATE dim_keszlet 
+        UPDATE ua_dim_keszlet 
         SET aktualis_liter = aktualis_liter - NEW.kiadott_liter,
             utolso_mozgas = NOW()
         WHERE tartaly_id = NEW.tartaly_id;
@@ -91,7 +91,7 @@ BEGIN
 
     -- 6. JÁRMŰ ÁLLAPOT FRISSÍTÉS
     IF NEW.ervenyes = TRUE THEN
-        UPDATE dim_jarmuvek_allapot
+        UPDATE eszkoz_dim_jarmuvek_allapot
         SET aktualis_km = COALESCE(NEW.km_akt, aktualis_km),
             aktualis_uzemora = COALESCE(NEW.gepuzemora_akt, aktualis_uzemora),
             utolso_mozgas = NOW()
@@ -102,14 +102,14 @@ END$$
 
 DELIMITER ;
 
--- FACT_KESZLET_MOZGAS VALIDÁCIÓ
+-- ua_fact_keszlet_mozgas VALIDÁCIÓ
 
 DELIMITER $$
 
 DROP TRIGGER IF EXISTS trg_mozgas_validate$$
 
 CREATE TRIGGER trg_mozgas_validate
-BEFORE INSERT ON fact_keszlet_mozgas
+BEFORE INSERT ON ua_fact_keszlet_mozgas
 FOR EACH ROW
 BEGIN
     DECLARE defense_forras_limit DECIMAL(10,2);
@@ -120,7 +120,7 @@ BEGIN
 
     -- 1. FORRÁS DEFENSE LIMIT
     SELECT aktualis_liter INTO defense_forras_limit
-    FROM dim_keszlet
+    FROM ua_dim_keszlet
     WHERE tartaly_id = NEW.forras_tartaly_id;
 
     IF defense_forras_limit IS NOT NULL THEN
@@ -138,11 +138,11 @@ BEGIN
 
     -- 2. CÉL KAPACITÁS
     SELECT befogado_kepesseg_l INTO cel_max_kapacitas
-    FROM dim_tartaly
+    FROM ua_dim_tartaly
     WHERE tartaly_id = NEW.cel_tartaly_id;
 
     SELECT aktualis_liter INTO cel_aktualis
-    FROM dim_keszlet
+    FROM ua_dim_keszlet
     WHERE tartaly_id = NEW.cel_tartaly_id;
 
     IF cel_aktualis IS NOT NULL
@@ -163,10 +163,10 @@ BEGIN
 
     -- 3. ANYAG CHECK
     SELECT anyag_id INTO forras_anyag
-    FROM dim_tartaly WHERE tartaly_id = NEW.forras_tartaly_id;
+    FROM ua_dim_tartaly WHERE tartaly_id = NEW.forras_tartaly_id;
 
     SELECT anyag_id INTO cel_anyag
-    FROM dim_tartaly WHERE tartaly_id = NEW.cel_tartaly_id;
+    FROM ua_dim_tartaly WHERE tartaly_id = NEW.cel_tartaly_id;
 
     IF forras_anyag IS NOT NULL 
        AND cel_anyag IS NOT NULL 
@@ -178,12 +178,12 @@ BEGIN
 
     -- 4. KÉSZLET FRISSÍTÉS
     IF NEW.ervenyes = TRUE THEN
-        UPDATE dim_keszlet 
+        UPDATE ua_dim_keszlet 
         SET aktualis_liter = aktualis_liter - NEW.mozgatott_liter,
             utolso_mozgas = NOW()
         WHERE tartaly_id = NEW.forras_tartaly_id;
 
-        UPDATE dim_keszlet 
+        UPDATE ua_dim_keszlet 
         SET aktualis_liter = aktualis_liter + NEW.mozgatott_liter,
             utolso_mozgas = NOW()
         WHERE tartaly_id = NEW.cel_tartaly_id;
@@ -193,14 +193,14 @@ END$$
 
 DELIMITER ;
 
--- FACT_KESZLET_BEVET  VALIDÁCIÓ
+-- ua_fact_keszlet_bevet  VALIDÁCIÓ
 
 DELIMITER $$
 
 DROP TRIGGER IF EXISTS trg_bevet_validate$$
 
 CREATE TRIGGER trg_bevet_validate
-BEFORE INSERT ON fact_keszlet_bevet
+BEFORE INSERT ON ua_fact_keszlet_bevet
 FOR EACH ROW
 BEGIN
     DECLARE max_kapacitas DECIMAL(10,2);
@@ -216,11 +216,11 @@ BEGIN
 
     -- 2. KAPACITÁS
     SELECT befogado_kepesseg_l INTO max_kapacitas
-    FROM dim_tartaly
+    FROM ua_dim_tartaly
     WHERE tartaly_id = NEW.tartaly_id;
 
     SELECT aktualis_liter INTO aktualis
-    FROM dim_keszlet
+    FROM ua_dim_keszlet
     WHERE tartaly_id = NEW.tartaly_id;
 
     IF max_kapacitas IS NOT NULL THEN
@@ -254,7 +254,7 @@ BEGIN
 
     -- 3. KÉSZLET FRISSÍTÉS (csak ha érvényes)
     IF NEW.ervenyes = TRUE THEN
-        UPDATE dim_keszlet 
+        UPDATE ua_dim_keszlet 
         SET aktualis_liter = aktualis_liter + NEW.bejovo_liter,
             utolso_mozgas = NOW()
         WHERE tartaly_id = NEW.tartaly_id;
@@ -263,3 +263,6 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+-------------------------------------HUMÁN(HR) TRIGGEREK---------------------------------------------

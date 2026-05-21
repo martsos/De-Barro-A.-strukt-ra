@@ -16,13 +16,13 @@ DAY 1 – Projekt alapozás
 
       Adatbázis tervezés
       Az eredeti Excel struktúra elemzése alapján egy normalizált, csillag-séma alapú adatmodell született:
-      8 dimenzió tábla: dim_ceg, dim_lokacio, dim_tartaly, dim_fogyoanyag, dim_ido, dim_jarmuvek, dim_munkaero – mind definiált PK/FK/UNIQUE constraint-ekkel
+      8 dimenzió tábla: core_dim_ceg, core_dim_lokacio, ua_dim_tartaly, ua_dim_fogyoanyag, core_dim_ido, eszkoz_dim_jarmuvek, core_dim_munkaero – mind definiált PK/FK/UNIQUE constraint-ekkel
       3 fact tábla: fact_tankolas, fact_tartaly_feltoltes, fact_anyagfelvetel – az eredeti 57 oszlopos összesítő tábla 3 logikai folyamatra bontva
       Adatmodell validálva MySQL Workbench EER diagramon – minden tábla kapcsolódik, nincsenek árva entitások.
 
       Nyitott kérdések / következő lépések
 
-      Üzembentartó = tulajdonos kérdés egyelőre leegyszerűsítve, mindkét FK dim_ceg-re mutat
+      Üzembentartó = tulajdonos kérdés egyelőre leegyszerűsítve, mindkét FK core_dim_ceg-re mutat
       Mobil tartály kettős természete (egyszerre jármű és tartály) dokumentálva, megoldás later
       Meglévő Excel adat migrációja Python scripttel – következő fázis
       Python FastAPI + HTML frontend építése a fact táblák adatbeviteléhez
@@ -65,7 +65,7 @@ DAY 3
       Indexek – audit összefoglaló
       A fact táblákon manuális indexek kerültek bevezetésre. A dim táblákon külön index nem szükséges, mivel ott minden szűrés PK vagy automatikusan létrehozott FK index alapján fut.
       A három fact táblán egységesen létrejött egy datum_id index az időszakos szűrésekhez, egy ervenyes index a trigger által megjelölt hibás rekordok gyors lekérdezéséhez, 
-      valamint összetett tartaly_id + datum_id indexek a tartályonkénti időszakos riportokhoz. A fact_keszlet_kiadas táblán az eszkoz_sk külön indexet kapott a járműtörténet lekérdezések miatt. A fact_keszlet_mozgas-on a forrás és cél tartály is külön összetett indexet kapott, mivel mindkét irányból érkezhet lekérdezés.
+      valamint összetett tartaly_id + datum_id indexek a tartályonkénti időszakos riportokhoz. A ua_fact_keszlet_kiadas táblán az eszkoz_sk külön indexet kapott a járműtörténet lekérdezések miatt. A ua_fact_keszlet_mozgas-on a forrás és cél tartály is külön összetett indexet kapott, mivel mindkét irányból érkezhet lekérdezés.
       Copilot az összetett indexeket kiszórta volna KISS elv alapján, ChatGPT és Claude a riport lekérdezések várható mintázata miatt ezek megtartása mellett döntött. 
       Ha a rendszer adatmennyisége és lekérdezési igénye nem indokolja, az összetett indexek DROP INDEX-szel eltávolíthatók.
       A debarro rendszere a jelenlegi indexeket vélhetően igényelni fogja.
@@ -110,10 +110,10 @@ DAY 5
 
       Dim táblák – GET endpointok
       Az adatbázis dimenzió tábláit a következő endpointokon lehet lekérdezni:
-      EndpointTáblaGET /cegekdim_cegGET /tartalydim_tartalyGET /jarmudim_jarmuvekGET /alkalmazottdim_munkaeroGET /lokaciodim_lokacioGET /fogyoanyagdim_fogyoanyag
+      EndpointTáblaGET /cegekcore_dim_cegGET /tartalyua_dim_tartalyGET /jarmueszkoz_dim_jarmuvekGET /alkalmazottcore_dim_munkaeroGET /lokaciocore_dim_lokacioGET /fogyoanyagua_dim_fogyoanyag
 
       Dátum dimenzió – generate_dates.py
-      A dim_ido táblát Python script tölti fel. A database.py és generate_dates.py fájlokban ugyanazt a jelszót kell használni.
+      A core_dim_ido táblát Python script tölti fel. A database.py és generate_dates.py fájlokban ugyanazt a jelszót kell használni.
       cmdpython generate_dates.py
 
       A datum_id formátuma YYYYMMDD (pl. 20260101) – klasszikus data warehouse konvenció.
@@ -202,8 +202,8 @@ FIGYELMEZTETÉS módban – az adat bekerül, de a válaszban jelzi a készlethi
         Top used stack function  · SQL (MySQL Trigger overview/write)
 
 Day 6 Morning
-      dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
-      Triggerek újraírva – mindhárom trigger átírva hogy a dim_keszlet-et frissítse:
+      ua_dim_keszlet tábla – valós idejű készletnyilvántartó tábla létrehozva. Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén.
+      Triggerek újraírva – mindhárom trigger átírva hogy a ua_dim_keszlet-et frissítse:
 
       bevet → forrás tartály + bejovo_liter
       kiadas → tartály - kiadott_liter
@@ -214,7 +214,7 @@ Day 6 Morning
       0% - 2% között → FIGYELMEZTETÉS, készlet frissül
       2% felett → HIBA, készlet nem frissül
 
-      Pisztoly óraállás átrakva fact_keszlet_mozgas → fact_keszlet_kiadas-ba, mert ott keletkezik az adat.
+      Pisztoly óraállás átrakva ua_fact_keszlet_mozgas → ua_fact_keszlet_kiadas-ba, mert ott keletkezik az adat.
       GitHub – private repo létrehozva, projekt feltöltve.
       dotenv – database.py átírva, jelszó .env fájlba kerül, .gitignore beállítva.
 
@@ -292,14 +292,14 @@ Day 7 morning – React frontend fejlesztés
 
   !! Technikai adósság – dim táblák aktív/inaktív kezelése
   Minden dim táblába kelleni fog egy aktiv oszlop. Ha egy entitás kikerül a rendszerből (alkalmazott kilép, jármű selejtezés, tartály csere) – az adat megmarad a fact táblákban de a formokban már ne jelenjen meg.
-  Érintett táblák: dim_tartaly, dim_jarmuvek, dim_munkaero, dim_ceg, dim_lokacio, dim_fogyoanyag !!
+  Érintett táblák: ua_dim_tartaly, eszkoz_dim_jarmuvek, core_dim_munkaero, core_dim_ceg, core_dim_lokacio, ua_dim_fogyoanyag !!
 
 
 Day 7 – Afternoon Formok véglegesítése
     A három beviteli form (Bevételezés, Mozgás, Kiadás) demo szinten kész.
     Kiadás form fejlesztés:
 
-    Jármű választásnál automatikusan behúzza az aktuális km és üzemóra értékeket a dim_jarmuvek_allapot táblából
+    Jármű választásnál automatikusan behúzza az aktuális km és üzemóra értékeket a eszkoz_dim_jarmuvek_allapot táblából
     Sikeres rögzítés után azonnal frissül az előző km/üzemóra érték – dupla bevitel ellen védett
     Optional[float] típus a nem kötelező mezőkre (gepuzemora, km, pisztoly)
 
@@ -320,10 +320,10 @@ Day 7 – Afternoon Formok véglegesítése
       321 +1. vw_tartaly_egyenleg view – háromféle hiba volt benne egyszerre:
       322 +   - A bevételezett mennyiséget a zaro_liter összegezte, holott a helyes érték a bejovo_liter.
       323 +     (A zaro_liter a tartály szintje a szállítás után, nem maga a szállított mennyiség.)
-      324 +   - A fact_keszlet_mozgas tábla teljesen hiányzott a számításból, tehát a tartályok közti
+      324 +   - A ua_fact_keszlet_mozgas tábla teljesen hiányzott a számításból, tehát a tartályok közti
       325 +     átmozgatások egyáltalán nem szerepeltek az egyenlegben.
       326 +   - Nem szűrt ervenyes = TRUE feltételre, így a hibás/blokkolt rekordok is beleszámítottak.
-      327 +   A javított view az aktualis_liter értéket a dim_keszlet táblából veszi (trigger által karbantartott,
+      327 +   A javított view az aktualis_liter értéket a ua_dim_keszlet táblából veszi (trigger által karbantartott,
       328 +   hiteles forrás), a historikus összesítők (ossz_bevet, ossz_kiadott, ossz_mozgas_ki, ossz_mozgas_be)
       329 +   mind csak ervenyes = TRUE rekordokat számolnak, és a mozgás mindkét iránya (forrás és cél) szerepel.
       330 +   sql
@@ -332,10 +332,10 @@ Day 7 – Afternoon Formok véglegesítése
       333 +
       334 +2. trg_kiadas_validate – defense limit: figyelmeztetésből hiba
       335 +   A trigger korábban csak FIGYELMEZTETÉS-t adott ha a kiadott liter meghaladta az aktuális készletet,
-      336 +   de az ervenyes flag TRUE maradt. Emiatt a készlet frissítés is lefutott és a dim_keszlet.aktualis_liter
+      336 +   de az ervenyes flag TRUE maradt. Emiatt a készlet frissítés is lefutott és a ua_dim_keszlet.aktualis_liter
       337 +   negatívba mehetett – ami fizikailag értelmetlen (nem lehet több üzemanyagot kiadni mint amennyi van).
       338 +   A javítás után: ha kiadott_liter > aktualis_liter → ervenyes = FALSE, HIBA üzenet, és a készlet
-      339 +   frissítés blokkolva. A dim_keszlet soha nem mehet negatívba kiadás miatt.
+      339 +   frissítés blokkolva. A ua_dim_keszlet soha nem mehet negatívba kiadás miatt.
       340 +   Az érintett lábjegyzet (¹) a Day 5-ben frissítve.
       341 +
       342 +3. Trigger újratelepítés a változás után:
@@ -392,23 +392,23 @@ Alapelv: ID-k soha nem törlődnek – csak AKTÍV / INAKTÍV állapot között 
 Adatbázis módosítások
 A korábban állapot nélküli három dim táblához hozzáadásra került az allapot oszlop:
 
-    ALTER TABLE dim_ceg        ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
-    ALTER TABLE dim_lokacio    ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
-    ALTER TABLE dim_fogyoanyag ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+    ALTER TABLE core_dim_ceg        ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+    ALTER TABLE core_dim_lokacio    ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
+    ALTER TABLE ua_dim_fogyoanyag ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'...
 
 Így minden dim tábla egységesen kezeli az aktivitást:
-dim_munkaero, dim_tartaly, dim_jarmuvek, dim_ceg, dim_lokacio, dim_fogyoanyag.
+core_dim_munkaero, ua_dim_tartaly, eszkoz_dim_jarmuvek, core_dim_ceg, core_dim_lokacio, ua_dim_fogyoanyag.
 
 Kezelt törzsadatok és mezőik
 
-    Alkalmazottak (dim_munkaero)   – név, foglalkoztatás típusa, foglalkoztató cég, munkaóra
-    Járművek (dim_jarmuvek)        – rendszám, belső ID, kategória, De Barro csop., megnevezés,
+    Alkalmazottak (core_dim_munkaero)   – név, foglalkoztatás típusa, foglalkoztató cég, munkaóra
+    Járművek (eszkoz_dim_jarmuvek)        – rendszám, belső ID, kategória, De Barro csop., megnevezés,
                                      gyártmány, típus, üzemanyag, alvázszám, üzembentartó, tulajdonos
-    Tartályok (dim_tartaly)        – tartályszám, típus (FIX/MOBIL/KANNA), kapacitás,
+    Tartályok (ua_dim_tartaly)        – tartályszám, típus (FIX/MOBIL/KANNA), kapacitás,
                                      anyag (FK), lokáció (FK), egyéb adatok
-    Cégek (dim_ceg)                – cég neve, tulajdonos neve, kapcsolattartó, egyéb
-    Lokációk (dim_lokacio)         – lokáció neve, helyrajzi szám, GPS koordináták
-    Fogyóanyagok (dim_fogyoanyag)  – megnevezés, kategória, tulajdonos cég (FK)
+    Cégek (core_dim_ceg)                – cég neve, tulajdonos neve, kapcsolattartó, egyéb
+    Lokációk (core_dim_lokacio)         – lokáció neve, helyrajzi szám, GPS koordináták
+    Fogyóanyagok (ua_dim_fogyoanyag)  – megnevezés, kategória, tulajdonos cég (FK)
 
 Működés a felületen
 Az oldal hat fülből áll (Ant Design Tabs). Minden fülön:
@@ -440,3 +440,39 @@ az FK sosem lett beírva az adatbázisba. Javítva.
     DEBARRO-PYTHON/main.py               – 13 új endpoint, modellek bővítve
     debarro-frontend/src/Torzsadatok.js  – teljes új komponens
     debarro-frontend/src/Torzsadatok.css – új stílusfájl (orange dark theme)
+
+    DAY 10 – Naming convention refaktor & schema tagolás
+Dátum: 2026-05-21
+
+Kontextus
+Az üzemanyag modul működőképes volt, de a táblanevek nem követtek egységes
+konvenciót. A projekt növekedésével szükségessé vált a moduláris tagolás
+és a prefix-alapú naming convention bevezetése.
+
+Elvégzett munka
+Teljes táblanév átállás prefix-alapú naming conventionre:
+  core_  → törzsadatok (cég, lokáció, munkaerő, projekt, idő)
+  ua_    → üzemanyag modul
+  eszkoz_→ eszközpark
+  proj_  → projektek
+  hr_    → humán (stub)
+  fin_   → financiális (stub)
+
+Egy monolitikus schema helyett moduláris fájltagolás:
+  schema_core.sql, schema_ua.sql, schema_eszkoz.sql,
+  schema_proj.sql, schema_hr.sql, schema_fin.sql
+  shema_all_in.sql → teljes séma egy fájlban (éles deploy)
+
+ALTER TABLE-ek kiváltva tiszta CREATE-ekkel (még nincs éles adat)
+VS Code Replace in Files használata a tömeges átnevezéshez
+drop.sql frissítve, FOREIGN_KEY_CHECKS = 0 technika dokumentálva
+trigger.sql és view.sql táblanevei frissítve
+insert.sql frissítve
+
+Tanulság
+Replace All futtatásakor figyelni kell a sorrendreés a preview-ra –
+prefix duplikáció könnyen keletkezik (ua_ua_, core_core_ stb.)
+MySQL kommentekben a --- elválasztók szintaxis hibát okoznak, csak -- használható
+
+Stack
+MySQL 8.4 · Python 3.12 · FastAPI · React · VS Code

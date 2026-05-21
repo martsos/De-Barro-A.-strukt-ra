@@ -2,66 +2,66 @@
 <diagram version="1" name="debarro_ERD">
 	<entities>
 		<data-source id="mysql8-19df7fa1291-5a1b2f8adcbbc6c5">
-			<entity id="1" name="dim_ceg" fq-name="debarro_uzemanyag.dim_ceg">
+			<entity id="1" name="core_dim_ceg" fq-name="debarro_uzemanyag.core_dim_ceg">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="2" name="dim_fogyoanyag" fq-name="debarro_uzemanyag.dim_fogyoanyag">
+			<entity id="2" name="ua_dim_fogyoanyag" fq-name="debarro_uzemanyag.ua_dim_fogyoanyag">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="3" name="dim_ido" fq-name="debarro_uzemanyag.dim_ido">
+			<entity id="3" name="core_dim_ido" fq-name="debarro_uzemanyag.core_dim_ido">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="4" name="dim_jarmuvek" fq-name="debarro_uzemanyag.dim_jarmuvek">
+			<entity id="4" name="eszkoz_dim_jarmuvek" fq-name="debarro_uzemanyag.eszkoz_dim_jarmuvek">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="5" name="dim_jarmuvek_allapot" fq-name="debarro_uzemanyag.dim_jarmuvek_allapot">
+			<entity id="5" name="eszkoz_dim_jarmuvek_allapot" fq-name="debarro_uzemanyag.eszkoz_dim_jarmuvek_allapot">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="6" name="dim_keszlet" fq-name="debarro_uzemanyag.dim_keszlet">
+			<entity id="6" name="ua_dim_keszlet" fq-name="debarro_uzemanyag.ua_dim_keszlet">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="7" name="dim_lokacio" fq-name="debarro_uzemanyag.dim_lokacio">
+			<entity id="7" name="core_dim_lokacio" fq-name="debarro_uzemanyag.core_dim_lokacio">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="8" name="dim_munkaero" fq-name="debarro_uzemanyag.dim_munkaero">
+			<entity id="8" name="core_dim_munkaero" fq-name="debarro_uzemanyag.core_dim_munkaero">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="9" name="dim_tartaly" fq-name="debarro_uzemanyag.dim_tartaly">
+			<entity id="9" name="ua_dim_tartaly" fq-name="debarro_uzemanyag.ua_dim_tartaly">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="10" name="fact_keszlet_bevet" fq-name="debarro_uzemanyag.fact_keszlet_bevet">
+			<entity id="10" name="ua_fact_keszlet_bevet" fq-name="debarro_uzemanyag.ua_fact_keszlet_bevet">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="11" name="fact_keszlet_kiadas" fq-name="debarro_uzemanyag.fact_keszlet_kiadas">
+			<entity id="11" name="ua_fact_keszlet_kiadas" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas">
 				<path name="debarro_uzemanyag"/>
 			</entity>
-			<entity id="12" name="fact_keszlet_mozgas" fq-name="debarro_uzemanyag.fact_keszlet_mozgas">
+			<entity id="12" name="ua_fact_keszlet_mozgas" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas">
 				<path name="debarro_uzemanyag"/>
 			</entity>
 		</data-source>
 	</entities>
 	<relations>
-		<relation name="fk_fogyoanyag_tulajdonos" fq-name="debarro_uzemanyag.dim_fogyoanyag.fk_fogyoanyag_tulajdonos" type="fk" pk-ref="1" fk-ref="2"/>
-		<relation name="fk_jarmuvek_tulajdonos" fq-name="debarro_uzemanyag.dim_jarmuvek.fk_jarmuvek_tulajdonos" type="fk" pk-ref="1" fk-ref="4"/>
-		<relation name="fk_jarmuvek_uzembentarto" fq-name="debarro_uzemanyag.dim_jarmuvek.fk_jarmuvek_uzembentarto" type="fk" pk-ref="1" fk-ref="4"/>
-		<relation name="fk_munkaero_foglalkoztato" fq-name="debarro_uzemanyag.dim_munkaero.fk_munkaero_foglalkoztato" type="fk" pk-ref="1" fk-ref="8"/>
-		<relation name="fk_bevet_szallito" fq-name="debarro_uzemanyag.fact_keszlet_bevet.fk_bevet_szallito" type="fk" pk-ref="1" fk-ref="10"/>
-		<relation name="fk_tartaly_anyag" fq-name="debarro_uzemanyag.dim_tartaly.fk_tartaly_anyag" type="fk" pk-ref="2" fk-ref="9"/>
-		<relation name="fk_mozgas_anyag" fq-name="debarro_uzemanyag.fact_keszlet_mozgas.fk_mozgas_anyag" type="fk" pk-ref="2" fk-ref="12"/>
-		<relation name="fk_bevet_datum" fq-name="debarro_uzemanyag.fact_keszlet_bevet.fk_bevet_datum" type="fk" pk-ref="3" fk-ref="10"/>
-		<relation name="fk_kiadas_datum" fq-name="debarro_uzemanyag.fact_keszlet_kiadas.fk_kiadas_datum" type="fk" pk-ref="3" fk-ref="11"/>
-		<relation name="fk_mozgas_datum" fq-name="debarro_uzemanyag.fact_keszlet_mozgas.fk_mozgas_datum" type="fk" pk-ref="3" fk-ref="12"/>
-		<relation name="fk_jarmuvek_allapot" fq-name="debarro_uzemanyag.dim_jarmuvek_allapot.fk_jarmuvek_allapot" type="fk" pk-ref="4" fk-ref="5"/>
-		<relation name="fk_kiadas_eszkoz" fq-name="debarro_uzemanyag.fact_keszlet_kiadas.fk_kiadas_eszkoz" type="fk" pk-ref="4" fk-ref="11"/>
-		<relation name="fk_tartaly_lokacio" fq-name="debarro_uzemanyag.dim_tartaly.fk_tartaly_lokacio" type="fk" pk-ref="7" fk-ref="9"/>
-		<relation name="fk_bevet_atvevo" fq-name="debarro_uzemanyag.fact_keszlet_bevet.fk_bevet_atvevo" type="fk" pk-ref="8" fk-ref="10"/>
-		<relation name="fk_kiadas_gepkezelo" fq-name="debarro_uzemanyag.fact_keszlet_kiadas.fk_kiadas_gepkezelo" type="fk" pk-ref="8" fk-ref="11"/>
-		<relation name="fk_kiadas_kiado" fq-name="debarro_uzemanyag.fact_keszlet_kiadas.fk_kiadas_kiado" type="fk" pk-ref="8" fk-ref="11"/>
-		<relation name="fk_mozgas_felvevo" fq-name="debarro_uzemanyag.fact_keszlet_mozgas.fk_mozgas_felvevo" type="fk" pk-ref="8" fk-ref="12"/>
-		<relation name="fk_dim_keszlet" fq-name="debarro_uzemanyag.dim_keszlet.fk_dim_keszlet" type="fk" pk-ref="9" fk-ref="6"/>
-		<relation name="fk_bevet_tartaly" fq-name="debarro_uzemanyag.fact_keszlet_bevet.fk_bevet_tartaly" type="fk" pk-ref="9" fk-ref="10"/>
-		<relation name="fk_kiadas_tartaly" fq-name="debarro_uzemanyag.fact_keszlet_kiadas.fk_kiadas_tartaly" type="fk" pk-ref="9" fk-ref="11"/>
-		<relation name="fk_mozgas_cel" fq-name="debarro_uzemanyag.fact_keszlet_mozgas.fk_mozgas_cel" type="fk" pk-ref="9" fk-ref="12"/>
-		<relation name="fk_mozgas_forras" fq-name="debarro_uzemanyag.fact_keszlet_mozgas.fk_mozgas_forras" type="fk" pk-ref="9" fk-ref="12"/>
+		<relation name="fk_fogyoanyag_tulajdonos" fq-name="debarro_uzemanyag.ua_dim_fogyoanyag.fk_fogyoanyag_tulajdonos" type="fk" pk-ref="1" fk-ref="2"/>
+		<relation name="fk_jarmuvek_tulajdonos" fq-name="debarro_uzemanyag.eszkoz_dim_jarmuvek.fk_jarmuvek_tulajdonos" type="fk" pk-ref="1" fk-ref="4"/>
+		<relation name="fk_jarmuvek_uzembentarto" fq-name="debarro_uzemanyag.eszkoz_dim_jarmuvek.fk_jarmuvek_uzembentarto" type="fk" pk-ref="1" fk-ref="4"/>
+		<relation name="fk_munkaero_foglalkoztato" fq-name="debarro_uzemanyag.core_dim_munkaero.fk_munkaero_foglalkoztato" type="fk" pk-ref="1" fk-ref="8"/>
+		<relation name="fk_bevet_szallito" fq-name="debarro_uzemanyag.ua_fact_keszlet_bevet.fk_bevet_szallito" type="fk" pk-ref="1" fk-ref="10"/>
+		<relation name="fk_tartaly_anyag" fq-name="debarro_uzemanyag.ua_dim_tartaly.fk_tartaly_anyag" type="fk" pk-ref="2" fk-ref="9"/>
+		<relation name="fk_mozgas_anyag" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas.fk_mozgas_anyag" type="fk" pk-ref="2" fk-ref="12"/>
+		<relation name="fk_bevet_datum" fq-name="debarro_uzemanyag.ua_fact_keszlet_bevet.fk_bevet_datum" type="fk" pk-ref="3" fk-ref="10"/>
+		<relation name="fk_kiadas_datum" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas.fk_kiadas_datum" type="fk" pk-ref="3" fk-ref="11"/>
+		<relation name="fk_mozgas_datum" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas.fk_mozgas_datum" type="fk" pk-ref="3" fk-ref="12"/>
+		<relation name="fk_jarmuvek_allapot" fq-name="debarro_uzemanyag.eszkoz_dim_jarmuvek_allapot.fk_jarmuvek_allapot" type="fk" pk-ref="4" fk-ref="5"/>
+		<relation name="fk_kiadas_eszkoz" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas.fk_kiadas_eszkoz" type="fk" pk-ref="4" fk-ref="11"/>
+		<relation name="fk_tartaly_lokacio" fq-name="debarro_uzemanyag.ua_dim_tartaly.fk_tartaly_lokacio" type="fk" pk-ref="7" fk-ref="9"/>
+		<relation name="fk_bevet_atvevo" fq-name="debarro_uzemanyag.ua_fact_keszlet_bevet.fk_bevet_atvevo" type="fk" pk-ref="8" fk-ref="10"/>
+		<relation name="fk_kiadas_gepkezelo" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas.fk_kiadas_gepkezelo" type="fk" pk-ref="8" fk-ref="11"/>
+		<relation name="fk_kiadas_kiado" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas.fk_kiadas_kiado" type="fk" pk-ref="8" fk-ref="11"/>
+		<relation name="fk_mozgas_felvevo" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas.fk_mozgas_felvevo" type="fk" pk-ref="8" fk-ref="12"/>
+		<relation name="fk_ua_dim_keszlet" fq-name="debarro_uzemanyag.ua_dim_keszlet.fk_ua_dim_keszlet" type="fk" pk-ref="9" fk-ref="6"/>
+		<relation name="fk_bevet_tartaly" fq-name="debarro_uzemanyag.ua_fact_keszlet_bevet.fk_bevet_tartaly" type="fk" pk-ref="9" fk-ref="10"/>
+		<relation name="fk_kiadas_tartaly" fq-name="debarro_uzemanyag.ua_fact_keszlet_kiadas.fk_kiadas_tartaly" type="fk" pk-ref="9" fk-ref="11"/>
+		<relation name="fk_mozgas_cel" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas.fk_mozgas_cel" type="fk" pk-ref="9" fk-ref="12"/>
+		<relation name="fk_mozgas_forras" fq-name="debarro_uzemanyag.ua_fact_keszlet_mozgas.fk_mozgas_forras" type="fk" pk-ref="9" fk-ref="12"/>
 	</relations>
 </diagram>

@@ -117,7 +117,7 @@ def generate_dates():
         neg = negyed(honap_szam)
 
         cursor.execute("""
-            INSERT IGNORE INTO dim_ido 
+            INSERT IGNORE INTO core_dim_ido 
             (datum_id, datum, ev, negyed, honap_szam, honap_nev, 
              het_szam, nap_szam, nap_nev, nap_tipusa, unnep_neve)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)

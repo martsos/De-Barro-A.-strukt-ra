@@ -1,3 +1,4 @@
+-------------------------------------ÜZEMANYAG VIEWOK---------------------------------------------
 -- ============================================================
 -- VIEW 1: Tartályonkénti aktuális egyenleg
 -- ============================================================
@@ -15,31 +16,31 @@ SELECT
     COALESCE(k.ossz_kiadott,     0)         AS ossz_kiadott,
     COALESCE(mo.ossz_mozgas_ki,  0)         AS ossz_mozgas_ki,
     COALESCE(mi.ossz_mozgas_be,  0)         AS ossz_mozgas_be
-FROM dim_tartaly t
-LEFT JOIN dim_fogyoanyag f  ON f.anyag_id       = t.anyag_id
-LEFT JOIN dim_lokacio l     ON l.lokacio_id     = t.tartaly_lokacio_id
-LEFT JOIN dim_keszlet dk    ON dk.tartaly_id    = t.tartaly_id
+FROM ua_dim_tartaly t
+LEFT JOIN ua_dim_fogyoanyag f  ON f.anyag_id       = t.anyag_id
+LEFT JOIN core_dim_lokacio l     ON l.lokacio_id     = t.tartaly_lokacio_id
+LEFT JOIN ua_dim_keszlet dk    ON dk.tartaly_id    = t.tartaly_id
 LEFT JOIN (
     SELECT tartaly_id, SUM(bejovo_liter) AS ossz_bevet
-    FROM fact_keszlet_bevet
+    FROM ua_fact_keszlet_bevet
     WHERE ervenyes = TRUE
     GROUP BY tartaly_id
 ) b  ON b.tartaly_id = t.tartaly_id
 LEFT JOIN (
     SELECT tartaly_id, SUM(kiadott_liter) AS ossz_kiadott
-    FROM fact_keszlet_kiadas
+    FROM ua_fact_keszlet_kiadas
     WHERE ervenyes = TRUE
     GROUP BY tartaly_id
 ) k  ON k.tartaly_id = t.tartaly_id
 LEFT JOIN (
     SELECT forras_tartaly_id AS tartaly_id, SUM(mozgatott_liter) AS ossz_mozgas_ki
-    FROM fact_keszlet_mozgas
+    FROM ua_fact_keszlet_mozgas
     WHERE ervenyes = TRUE
     GROUP BY forras_tartaly_id
 ) mo ON mo.tartaly_id = t.tartaly_id
 LEFT JOIN (
     SELECT cel_tartaly_id AS tartaly_id, SUM(mozgatott_liter) AS ossz_mozgas_be
-    FROM fact_keszlet_mozgas
+    FROM ua_fact_keszlet_mozgas
     WHERE ervenyes = TRUE
     GROUP BY cel_tartaly_id
 ) mi ON mi.tartaly_id = t.tartaly_id;
@@ -58,17 +59,17 @@ SELECT
     k.km_akt         AS utolso_km,
     k.gepuzemora_akt AS utolso_uzemora,
     k.datum_id       AS utolso_datum
-FROM dim_jarmuvek j
+FROM eszkoz_dim_jarmuvek j
 
 LEFT JOIN (
     SELECT eszkoz_sk, MAX(kiadas_id) AS max_id
-    FROM fact_keszlet_kiadas
+    FROM ua_fact_keszlet_kiadas
     WHERE km_akt IS NOT NULL
     GROUP BY eszkoz_sk
 ) x 
     ON x.eszkoz_sk = j.eszkoz_sk
 
-LEFT JOIN fact_keszlet_kiadas k 
+LEFT JOIN ua_fact_keszlet_kiadas k 
     ON k.kiadas_id = x.max_id;
 
 
@@ -84,10 +85,10 @@ SELECT
     f.anyag_megnevezes,
     COUNT(k.kiadas_id)          AS kiadasi_db,
     SUM(k.kiadott_liter)        AS ossz_kiadott_liter
-FROM fact_keszlet_kiadas k
-JOIN dim_ido i      ON i.datum_id   = k.datum_id
-JOIN dim_tartaly t  ON t.tartaly_id = k.tartaly_id
-JOIN dim_fogyoanyag f ON f.anyag_id = t.anyag_id
+FROM ua_fact_keszlet_kiadas k
+JOIN core_dim_ido i      ON i.datum_id   = k.datum_id
+JOIN ua_dim_tartaly t  ON t.tartaly_id = k.tartaly_id
+JOIN ua_dim_fogyoanyag f ON f.anyag_id = t.anyag_id
 GROUP BY
     i.datum, i.ev, i.honap_nev,
     t.tartaly_szam, f.anyag_megnevezes;
@@ -102,7 +103,7 @@ SELECT
     kiadas_id           AS rekord_id,
     datum_id,
     hiba_uzenet
-FROM fact_keszlet_kiadas
+FROM ua_fact_keszlet_kiadas
 WHERE ervenyes = FALSE
 
 UNION ALL
@@ -112,7 +113,7 @@ SELECT
     bevet_id            AS rekord_id,
     datum_id,
     hiba_uzenet
-FROM fact_keszlet_bevet
+FROM ua_fact_keszlet_bevet
 WHERE ervenyes = FALSE
 
 UNION ALL
@@ -122,7 +123,7 @@ SELECT
     mozgas_id           AS rekord_id,
     datum_id,
     hiba_uzenet
-FROM fact_keszlet_mozgas
+FROM ua_fact_keszlet_mozgas
 WHERE ervenyes = FALSE;
 
 
@@ -142,11 +143,15 @@ SELECT
     WHEN SUM(b.bejovo_liter) > 0 
     THEN SUM(b.egysegar * b.bejovo_liter) / SUM(b.bejovo_liter)
     END AS atlag_egysegar
-FROM fact_keszlet_bevet b
-JOIN dim_ido i        ON i.datum_id    = b.datum_id
-JOIN dim_tartaly t    ON t.tartaly_id  = b.tartaly_id
-JOIN dim_fogyoanyag f ON f.anyag_id    = t.anyag_id
-LEFT JOIN dim_ceg c   ON c.ceg_id      = b.szallito_id
+FROM ua_fact_keszlet_bevet b
+JOIN core_dim_ido i        ON i.datum_id    = b.datum_id
+JOIN ua_dim_tartaly t    ON t.tartaly_id  = b.tartaly_id
+JOIN ua_dim_fogyoanyag f ON f.anyag_id    = t.anyag_id
+LEFT JOIN core_dim_ceg c   ON c.ceg_id      = b.szallito_id
 GROUP BY
     c.ceg_nev, i.ev, i.honap_nev,
     t.tartaly_szam, f.anyag_megnevezes;
+    
+
+
+    -------------------------------------HUMÁN(HR) TRIGGEREK---------------------------------------------
