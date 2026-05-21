@@ -125,13 +125,13 @@ CREATE TABLE dim_jarmuvek_allapot (
 ); -- Új tábla implementációja KM, és Gépüzemóra nyilvántartásra
 
 
-CREATE TABLE dim_munkaero (
+CREATE TABLE core_core_dim_munkaero (
     foglalkoztatott_id    INT          UNSIGNED NOT NULL AUTO_INCREMENT,
     foglalkoztatott_nev   VARCHAR(255) NOT NULL,
     foglalkoztato_id      INT          UNSIGNED NULL,
     foglalkoztatas_tipusa VARCHAR(100) NULL,
     munkaora              INT          UNSIGNED NULL,
-    CONSTRAINT pk_dim_munkaero           PRIMARY KEY (foglalkoztatott_id),
+    CONSTRAINT pk_core_core_dim_munkaero           PRIMARY KEY (foglalkoztatott_id),
     CONSTRAINT fk_munkaero_foglalkoztato FOREIGN KEY (foglalkoztato_id)
         REFERENCES dim_ceg (ceg_id)
         ON UPDATE CASCADE ON DELETE SET NULL
@@ -173,11 +173,11 @@ CREATE TABLE fact_keszlet_kiadas (
         ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT fk_kiadas_kiado FOREIGN KEY (kiado_szemely_id)
-        REFERENCES dim_munkaero (foglalkoztatott_id)
+        REFERENCES core_dim_munkaero (foglalkoztatott_id)
         ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT fk_kiadas_gepkezelo FOREIGN KEY (gepkezelo_id)
-        REFERENCES dim_munkaero (foglalkoztatott_id)
+        REFERENCES core_core_dim_munkaero (foglalkoztatott_id)
         ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT fk_kiadas_tartaly FOREIGN KEY (tartaly_id)
@@ -227,7 +227,7 @@ CREATE TABLE fact_keszlet_bevet (
         ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT fk_bevet_atvevo FOREIGN KEY (atvevo_id)
-        REFERENCES dim_munkaero (foglalkoztatott_id)
+        REFERENCES core_core_dim_munkaero (foglalkoztatott_id)
         ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT fk_bevet_szallito FOREIGN KEY (szallito_id)
@@ -257,7 +257,7 @@ CREATE TABLE fact_keszlet_mozgas (
         REFERENCES dim_ido (datum_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_mozgas_felvevo FOREIGN KEY (felvevo_id)
-        REFERENCES dim_munkaero (foglalkoztatott_id)
+        REFERENCES core_dim_munkaero (foglalkoztatott_id)
         ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_mozgas_forras FOREIGN KEY (forras_tartaly_id)
         REFERENCES dim_tartaly (tartaly_id)
@@ -289,7 +289,7 @@ ADD COLUMN pisztoly_oraallas DECIMAL(10,2) NULL AFTER km_akt;
 ALTER TABLE fact_keszlet_mozgas 
 DROP COLUMN pisztoly_oraallas;
 
-ALTER TABLE dim_munkaero 
+ALTER TABLE core_dim_munkaero 
 ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV' 
 CHECK (allapot IN ('AKTÍV','INAKTÍV'));
 
@@ -312,3 +312,19 @@ CHECK (allapot IN ('AKTÍV','INAKTÍV'));
 ALTER TABLE dim_fogyoanyag
 ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV'
 CHECK (allapot IN ('AKTÍV','INAKTÍV'));
+
+
+-- FORDULO SZÁMLÁLÁSÁHOZ SZÜKSÉGES TÁBLÁK------------------------
+
+CREATE TABLE dim_fordulo_tipus (
+    fordulo_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fordulo_nev       VARCHAR(255) NOT NULL,
+    projekt_szam      VARCHAR(100) NULL,  -- jövőbeli FK → dim_projekt
+    munkaterulet_szam VARCHAR(100) NULL,  -- jövőbeli FK → dim_munkaterulet
+    szelessegi_fok    DECIMAL(11, 8) NULL,
+    hosszusagi_fok    DECIMAL(11, 8) NULL,
+    allapot           VARCHAR(20) NOT NULL DEFAULT 'AKTÍV',
+    CONSTRAINT pk_dim_fordulo_tipus PRIMARY KEY (fordulo_id),
+    CONSTRAINT uq_dim_fordulo_nev   UNIQUE (fordulo_nev)
+);
+
