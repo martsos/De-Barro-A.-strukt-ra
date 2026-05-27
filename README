@@ -476,3 +476,66 @@ MySQL kommentekben a --- elválasztók szintaxis hibát okoznak, csak -- haszná
 
 Stack
 MySQL 8.4 · Python 3.12 · FastAPI · React · VS Code
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+DAY 11 – Moduláris frontend struktúra & auth alapok
+Dátum: 2026-05-27
+
+Elvégzett munka
+
+React Router DOM bevezetése – state-alapú navigáció lecserélve URL-alapú routingra.
+Új fájlstruktúra:
+  debarro-frontend/src/
+    pages/
+      ModulValaszto.js       – főoldal, modul választó kártyák
+      uzemanyag/
+        UzemanyagLayout.js   – UA modul wrapper, saját nav + Outlet
+        UaDashboard.js       – jelenlegi dashboard átköltöztetve
+      admin/
+        AdminLayout.js       – Admin modul wrapper, saját nav + Outlet
+    components/
+      ModulKartya.js         – újrahasználható modul kártya komponens
+
+URL struktúra:
+  /                          – modul választó főoldal
+  /uzemanyag                 – UA dashboard
+  /uzemanyag/kiadas
+  /uzemanyag/mozgas
+  /uzemanyag/bevet
+  /uzemanyag/elozmeny
+  /admin/torzsadatok         – Törzsadatok átköltöztetve UA-ból Admin alá
+
+ModulValaszto főoldal – négy modul kártya:
+  ÜZEMANYAG  → /uzemanyag  (aktív, narancssárga)
+  HUMÁN      → /hr         (hamarosan, inaktív)
+  PÉNZÜGY    → /penzugy    (hamarosan, inaktív)
+  ADMIN      → /admin      (aktív)
+
+Fejléc: De Barro logo + placeholder user badge (👤 Admin – token alapú csere later)
+Visszagomb minden modulban navigál / főoldalra.
+
+Auth alapok – DB oldal
+users és szerepkorok tábla létrehozva:
+  szerepkorok: szerepkor, modul, tier – pl. UA_1, HR_2, ADMIN_1
+  users: username, password_hash (bcrypt), szerepkor_id FK, allapot soft delete
+  Seed: 9 szerepkör (ADMIN/UA/HR tier 1-3), 2 tesztuser
+
+Következő lépések
+  auth.py – JWT token generálás, verify, FastAPI Depends()
+  POST /login endpoint – bcrypt ellenőrzés, token visszaad
+  LoginPage.js – React bejelentkezési felület
+  Protected route wrapper – token nélkül → redirect /login
+
+Érintett fájlok:
+  debarro-frontend/src/App.js                        – BrowserRouter + Routes
+  debarro-frontend/src/pages/ModulValaszto.js        – új főoldal
+  debarro-frontend/src/pages/uzemanyag/UaDashboard.js
+  debarro-frontend/src/pages/uzemanyag/UzemanyagLayout.js
+  debarro-frontend/src/pages/admin/AdminLayout.js
+  debarro-frontend/src/components/ModulKartya.js
+  DEBARRO-SQL/users_schema.sql                       – users + szerepkorok tábla
+
+Stack
+MySQL 8.4 · Python 3.12 · FastAPI · React · React Router DOM · VS Code
