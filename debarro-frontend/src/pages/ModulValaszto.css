@@ -1,0 +1,82 @@
+/* ─── MODUL VÁLASZTÓ — FŐOLDAL ───────────────────────────────── */
+
+.modul-valaszto {
+  min-height: 100vh;
+  background: #141414;
+  display: flex;
+  flex-direction: column;
+}
+
+.modul-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 64px;
+  background: linear-gradient(90deg, #0d0500 0%, #140800 50%, #08111f 100%);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.18);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.modul-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modul-header-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.modul-header-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  line-height: 1.2;
+}
+
+.modul-header-sub {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(249, 115, 22, 0.45);
+  display: block;
+}
+
+.modul-header-user {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.modul-grid-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.modul-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 640px;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .modul-grid {
+    grid-template-columns: 1fr;
+  }
+}

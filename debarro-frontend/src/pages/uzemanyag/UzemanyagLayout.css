@@ -1,0 +1,23 @@
+/* ─── ÜZEMANYAG LAYOUT — VISSZA GOMB ────────────────────────── */
+
+.ua-back-btn {
+  padding: 5px 12px;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  background: transparent;
+  color: rgba(249, 115, 22, 0.65);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.ua-back-btn:hover {
+  background: rgba(249, 115, 22, 0.08);
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.5);
+}

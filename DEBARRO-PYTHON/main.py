@@ -924,3 +924,195 @@ def patch_fogyoanyag_full(id: int, adat: UjFogyoanyag):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+
+# """
+# FORDULO ENDPOINTS – main.py-ba illesztendő kód
+# ================================================
+# Másold be a meglévő main.py végére (az app = FastAPI() és middleware
+# rész megőrzésével), vagy merge-eld a meglévő endpointokhoz.
+
+# Szükséges importok (ha még nincsenek):
+#   from fastapi import Query
+#   from typing import Optional
+#   from datetime import date
+# """
+
+# # --- Pydantic modellek ---
+
+# from pydantic import BaseModel
+# from typing import Optional
+# from datetime import date as date_type
+# from fastapi import Query
+
+
+# class ForduloPatch(BaseModel):
+#     megjegyzes:     Optional[str]   = None
+#     ervenyes:       Optional[int]   = None
+#     fordulo_db_terv: Optional[int]  = None
+
+
+# # ============================================================
+# #  GET /fordulok  –  Napi forduló lista (szűrhető)
+# # ============================================================
+
+# @app.get("/fordulok")
+# def get_fordulok(
+#     datum_tol:  Optional[str] = Query(None, description="YYYY-MM-DD"),
+#     datum_ig:   Optional[str] = Query(None, description="YYYY-MM-DD"),
+#     rendszam:   Optional[str] = Query(None),
+#     lerako:     Optional[str] = Query(None),
+#     csak_elteres: bool        = Query(False, description="Csak ahol tény ≠ terv"),
+# ):
+#     """
+#     Napi forduló adatok lekérése.
+#     Alapértelmezett: utolsó 30 nap.
+#     """
+#     conn = get_db_connection()
+#     cursor = conn.cursor(dictionary=True)
+
+#     if not datum_tol:
+#         datum_tol = (date_type.today().replace(day=1)).isoformat()
+#     if not datum_ig:
+#         datum_ig = date_type.today().isoformat()
+
+#     sql = """
+#         SELECT
+#             id, datum, rendszam, kollegak, honnan, hova, lerako, anyag,
+#             fordulo_db_terv, fordulo_db_teny, fordulo_db_elteres,
+#             CASE
+#                 WHEN fordulo_db_elteres = 0 THEN 'OK'
+#                 WHEN fordulo_db_elteres > 0 THEN 'TERV_FELETT'
+#                 ELSE 'ELMARADAS'
+#             END AS teljesites_status,
+#             nap_kezd, nap_vege,
+#             atlag_koridő_perc, atlag_banyaban_perc,
+#             atlag_menet_perc, atlag_billentes_perc,
+#             nyitott_fordulo, ervenyes, megjegyzes, letrehozva
+#         FROM fact_fordulo
+#         WHERE datum BETWEEN %s AND %s
+#           AND ervenyes = 1
+#     """
+#     params = [datum_tol, datum_ig]
+
+#     if rendszam:
+#         sql += " AND rendszam = %s"
+#         params.append(rendszam)
+#     if lerako:
+#         sql += " AND lerako LIKE %s"
+#         params.append(f"%{lerako}%")
+#     if csak_elteres:
+#         sql += " AND fordulo_db_elteres != 0"
+
+#     sql += " ORDER BY datum DESC, rendszam, lerako LIMIT 1000"
+
+#     cursor.execute(sql, params)
+#     rows = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+
+#     # Time objektumok string-gé alakítása
+#     for row in rows:
+#         for key in ['nap_kezd', 'nap_vege']:
+#             if row[key] is not None:
+#                 row[key] = str(row[key])
+
+#     return rows
+
+
+# # ============================================================
+# #  GET /fordulok/osszesito  –  Heti/havi összesítő
+# # ============================================================
+
+# @app.get("/fordulok/osszesito")
+# def get_fordulok_osszesito(
+#     rendszam: Optional[str] = Query(None),
+#     ev:       Optional[int] = Query(None),
+#     ho:       Optional[int] = Query(None),
+# ):
+#     conn = get_db_connection()
+#     cursor = conn.cursor(dictionary=True)
+
+#     sql = "SELECT * FROM vw_fordulo_osszesito WHERE 1=1"
+#     params = []
+
+#     if rendszam:
+#         sql += " AND rendszam = %s"
+#         params.append(rendszam)
+#     if ev:
+#         sql += " AND ev = %s"
+#         params.append(ev)
+#     if ho:
+#         sql += " AND ho = %s"
+#         params.append(ho)
+
+#     sql += " LIMIT 500"
+#     cursor.execute(sql, params)
+#     rows = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+#     return rows
+
+
+# # ============================================================
+# #  PATCH /fordulok/{id}  –  Megjegyzés / érvényesség szerkesztés
+# # ============================================================
+
+# @app.patch("/fordulok/{fordulo_id}")
+# def patch_fordulo(fordulo_id: int, data: ForduloPatch):
+#     """
+#     Manuális javítás: megjegyzés hozzáadása, érvénytelenítés,
+#     vagy terv korrekció utólag.
+#     """
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+
+#     updates = []
+#     params  = []
+
+#     if data.megjegyzes is not None:
+#         updates.append("megjegyzes = %s")
+#         params.append(data.megjegyzes)
+#     if data.ervenyes is not None:
+#         updates.append("ervenyes = %s")
+#         params.append(data.ervenyes)
+#     if data.fordulo_db_terv is not None:
+#         updates.append("fordulo_db_terv = %s")
+#         params.append(data.fordulo_db_terv)
+#         # Eltérés újraszámolása
+#         updates.append("fordulo_db_elteres = (fordulo_db_teny - %s)")
+#         params.append(data.fordulo_db_terv)
+
+#     if not updates:
+#         cursor.close()
+#         conn.close()
+#         return {"message": "Nincs módosítandó adat"}
+
+#     sql = f"UPDATE fact_fordulo SET {', '.join(updates)} WHERE id = %s"
+#     params.append(fordulo_id)
+#     cursor.execute(sql, params)
+#     conn.commit()
+#     affected = cursor.rowcount
+#     cursor.close()
+#     conn.close()
+
+#     return {"id": fordulo_id, "modositott_sorok": affected}
+
+
+# # ============================================================
+# #  GET /fordulok/rendszamok  –  Egyedi rendszámok (dropdown-hoz)
+# # ============================================================
+
+# @app.get("/fordulok/rendszamok")
+# def get_fordulo_rendszamok():
+#     conn = get_db_connection()
+#     cursor = conn.cursor(dictionary=True)
+#     cursor.execute("""
+#         SELECT DISTINCT rendszam
+#         FROM fact_fordulo
+#         ORDER BY rendszam
+#     """)
+#     rows = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+#     return [r['rendszam'] for r in rows]

@@ -45,4 +45,6 @@ CREATE TABLE eszkoz_dim_jarmuvek_allapot (
     CONSTRAINT fk_eszkoz_dim_jarmuvek_allapot FOREIGN KEY (eszkoz_sk)
         REFERENCES eszkoz_dim_jarmuvek (eszkoz_sk)
         ON UPDATE CASCADE ON DELETE RESTRICT
-); -- Új tábla implementációja KM, és Gépüzemóra nyilvántartásra
+); 
+
+
