@@ -3,6 +3,8 @@ from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
+from auth import create_access_token, verify_password, get_current_user
+from fastapi import Depends
 from database import get_connection
 
 
@@ -463,6 +465,10 @@ class UjTartaly(BaseModel):
 class AllapotAdat(BaseModel):
     allapot: str  # 'AKTÍV' vagy 'INAKTÍV'
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 @app.post("/alkalmazott")
 def post_alkalmazott(adat: UjAlkalmazott):
     conn = get_connection()
@@ -838,6 +844,7 @@ def patch_jarmu_full(id: int, adat: UjJarmu):
     conn.close()
     return {"ok": True}
 
+
 @app.patch("/tartaly/{id}")
 def patch_tartaly_full(id: int, adat: UjTartaly):
     if adat.tartaly_tipus not in ("FIX", "MOBIL", "KANNA"):
@@ -925,6 +932,50 @@ def patch_fogyoanyag_full(id: int, adat: UjFogyoanyag):
     conn.close()
     return {"ok": True}
 
+
+@app.post("/login")
+def login(request: LoginRequest):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT u.user_id, u.username, u.password_hash, u.nev, u.allapot,
+               s.szerepkor, s.modul, s.tier
+        FROM users u
+        JOIN szerepkorok s ON u.szerepkor_id = s.szerepkor_id
+        WHERE u.username = %s
+    """, (request.username,))
+    
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Hibás felhasználónév vagy jelszó")
+    
+    if user["allapot"] != "AKTÍV":
+        raise HTTPException(status_code=401, detail="Inaktív felhasználó")
+    
+    if not verify_password(request.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Hibás felhasználónév vagy jelszó")
+    
+    token = create_access_token({
+        "username": user["username"],
+        "nev": user["nev"],
+        "szerepkor": user["szerepkor"],
+        "modul": user["modul"],
+        "tier": user["tier"]
+    })
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "username": user["username"],
+        "nev": user["nev"],
+        "szerepkor": user["szerepkor"],
+        "modul": user["modul"],
+        "tier": user["tier"]
+    }
 
 # """
 # FORDULO ENDPOINTS – main.py-ba illesztendő kód
