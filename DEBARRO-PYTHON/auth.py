@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pathlib import Path
+from fastapi import Depends, HTTPException, status
 
 load_dotenv(Path(__file__).parent / "validate.env")
 
@@ -45,3 +46,18 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return payload
+
+def require_role(allowed_modules: list, max_tier: int = 3):
+    def checker(current_user = Depends(get_current_user)):
+        if current_user["modul"] not in allowed_modules and current_user["modul"] != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Nincs jogosultságod ehhez a művelethez"
+            )
+        if current_user["tier"] > max_tier:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Nincs jogosultságod ehhez a művelethez"
+            )
+        return current_user
+    return checker

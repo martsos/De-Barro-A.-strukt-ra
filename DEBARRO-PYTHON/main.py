@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from fastapi import Depends
 from database import get_connection
+from auth import get_current_user, require_role
 
 
 app = fastapi.FastAPI()
@@ -976,6 +977,21 @@ def login(request: LoginRequest):
         "modul": user["modul"],
         "tier": user["tier"]
     }
+
+# Csak UA modul, bármely tier
+@app.post("/keszlet-kiadas")
+def post_kiadas(adat: KeszletKiadas, current_user = Depends(require_role(["UZEMANYAG"], max_tier=3))):
+    ...
+
+# Csak UA modul, tier 1-2 (tier 3 nem írhat)
+@app.post("/tartaly")
+def post_tartaly(adat: UjTartaly, current_user = Depends(require_role(["UZEMANYAG"], max_tier=2))):
+    ...
+
+# Csak ADMIN
+@app.patch("/users/{id}")
+def patch_user(id: int, current_user = Depends(require_role(["ADMIN"], max_tier=1))):
+    ...
 
 # """
 # FORDULO ENDPOINTS – main.py-ba illesztendő kód

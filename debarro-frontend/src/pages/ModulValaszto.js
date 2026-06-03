@@ -1,5 +1,6 @@
 import ModulKartya from "../components/ModulKartya";
 import "./ModulValaszto.css";
+import { useNavigate } from "react-router-dom";
 
 const modulok = [
   {
@@ -33,6 +34,16 @@ const modulok = [
 ];
 
 function ModulValaszto() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
   return (
     <div className="modul-valaszto">
       <header className="modul-header">
@@ -43,7 +54,7 @@ function ModulValaszto() {
             <span className="modul-header-sub">Válassz modult</span>
           </div>
         </div>
-        <div className="modul-header-user">👤 Admin</div>
+        <div className="modul-header-user">👤 {user?.nev || "Admin"} <button onClick={handleLogout}>Kilépés</button></div>
       </header>
 
       <main className="modul-grid-wrapper">
