@@ -5,8 +5,10 @@ import os
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from pathlib import Path
 
-load_dotenv("validate.env")
+load_dotenv(Path(__file__).parent / "validate.env")
+
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
 EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", 8))

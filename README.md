@@ -1,0 +1,424 @@
+# De Barro – Üzemanyag & Eszköznyilvántartó Rendszer
+
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)
+![Ant Design](https://img.shields.io/badge/Ant%20Design-1890FF?style=for-the-badge&logo=antdesign&logoColor=white)
+
+---
+
+![De Barro – Module Selector](Actaul_front.PNG)
+
+## Áttekintés
+
+A De Barro egy moduláris vállalati nyilvántartó rendszer, amelyet egy KKV számára fejlesztünk. Az első, éles modul az üzemanyag- és eszközgazdálkodást fedi le: tankolt mennyiségek, tartályok közti mozgások, jármű km/üzemóra nyilvántartás. A rendszer egy 4 300+ soros, 57 oszlopos Excel-nyilvántartást vált ki normalizált, SQL-alapú adatmodellre.
+
+### Funkciók
+
+- **Bevételezés** – tankerszállítások rögzítése, tartályonkénti készletkövetés
+- **Kiadás** – jármű-üzemanyag kiadás km/üzemóra ellenőrzéssel
+- **Mozgás** – tartályok közti átmozgatás, kereszttöltés-védelem
+- **Előzmények** – szűrhető tranzakciólista, rekordszintű állapotjelzéssel
+- **Törzsadatok** – alkalmazottak, járművek, tartályok, cégek, lokációk kezelése
+- **Modul választó főoldal** – ÜZEMANYAG / HUMÁN / PÉNZÜGY / ADMIN kártyák
+
+### Architektúra
+
+```
+debarro/
+├── DEBARRO-PYTHON/          # FastAPI backend
+│   ├── main.py              # összes endpoint
+│   ├── database.py          # MySQL kapcsolat (dotenv)
+│   └── auth.py              # JWT + bcrypt (folyamatban)
+├── DEBARRO-SQL/             # moduláris schema fájlok
+│   ├── schema_core.sql      # törzsadatok (cég, lokáció, munkaerő, idő)
+│   ├── schema_ua.sql        # üzemanyag modul
+│   ├── schema_eszkoz.sql    # eszközpark
+│   ├── schema_proj.sql      # projektek (stub)
+│   ├── schema_hr.sql        # humán (stub)
+│   ├── schema_fin.sql       # financiális (stub)
+│   ├── shema_all_in.sql     # teljes séma egyben (deploy)
+│   ├── trigger.sql          # validációs triggerek
+│   ├── view.sql             # riport view-k
+│   └── users_schema.sql     # auth táblák
+└── debarro-frontend/        # React SPA (CRA + Ant Design)
+    └── src/
+        ├── pages/
+        │   ├── ModulValaszto.js
+        │   ├── uzemanyag/
+        │   └── admin/
+        └── components/
+```
+
+### Tábla-prefix konvenció
+
+| Prefix | Modul |
+|--------|-------|
+| `core_` | törzsadatok – cég, lokáció, munkaerő, projekt, idő |
+| `ua_` | üzemanyag modul |
+| `eszkoz_` | eszközpark |
+| `proj_` | projektek |
+| `hr_` | humán (stub) |
+| `fin_` | financiális (stub) |
+
+### Indítás
+
+```bat
+# Egylépéses indítás (két CMD ablak nyílik)
+start_debarro.bat
+```
+
+```cmd
+# Vagy manuálisan
+cd C:\projektek\debarro\DEBARRO-PYTHON
+uvicorn main:app --reload
+
+cd C:\projektek\debarro\debarro-frontend
+npm start
+```
+
+| Szolgáltatás | URL |
+|---|---|
+| React frontend | http://localhost:3000 |
+| FastAPI backend | http://localhost:8000 |
+| API docs (Swagger) | http://localhost:8000/docs |
+
+### Triggerek telepítése
+
+```cmd
+mysql -u root -p debarro_uzemanyag < C:\projektek\debarro\DEBARRO-SQL\trigger.sql
+SHOW TRIGGERS FROM debarro_uzemanyag;
+```
+
+---
+
+## Fejlesztési Napló
+
+![De Barro – Module Selector](Actaul_front.PNG)
+
+---
+
+### DAY 1 – Projekt alapozás · 2026-05-04
+
+**Kontextus**
+A cég 2019 előtti Excel-alapú nyilvántartást használ üzemanyag, olaj és AdBlue kezelésére, közel 4 300+ tranzakciós sorral és 57 oszlopos összesítő táblával. A cél egy modern, SQL-alapú rendszerre való átállás Python + HTML frontenddel, amely later VPS-re költöztethető.
+
+**Elvégzett munka**
+
+- MySQL 8.4 telepítése winget segítségével – manuális inicializálás szükséges (`mysqld --initialize-insecure`), mivel a winget installer nem regisztrálta automatikusan a Windows service-t
+- Root jelszó beállítása `mysql_native_password` autentikációval (kompatibilitási ok)
+- Python 3.12 + `mysql-connector-python` telepítése
+- VS Code + SQLTools extension bekötése a lokális MySQL instance-ra
+
+**Adatbázis tervezés**
+
+Az eredeti Excel struktúra elemzése alapján egy normalizált, csillag-séma alapú adatmodell született:
+- 8 dimenzió tábla definiált PK/FK/UNIQUE constraint-ekkel
+- 3 fact tábla: az eredeti 57 oszlopos összesítő tábla 3 logikai folyamatra bontva
+- Adatmodell validálva MySQL Workbench EER diagramon
+
+**Nyitott kérdések**
+
+- Üzembentartó = tulajdonos kérdés leegyszerűsítve, mindkét FK `core_dim_ceg`-re mutat
+- Mobil tartály kettős természete (egyszerre jármű és tartály) dokumentálva, megoldás later
+
+`Stack: MySQL 8.4 · Python 3.12 · mysql-connector-python · VS Code · MySQL Workbench`
+
+---
+
+### DAY 2 – Adatmodell finomítás & üzleti logika · 2026-05-05
+
+**Kulcsdöntés – trigger alapú védelem CHECK helyett**
+
+A KKV környezet nem tűri az adatveszteséget. Egy hiányos rekord (pl. km érték nélküli tankolás) értékesebb mint egy be sem kerülő esemény. Ezért:
+
+- CHECK constraint-ek és szigorú NOT NULL kényszerek minimálisra csökkentve a fact táblákon
+- Triggerek kezelik a validációt – az adat bekerül, a rendszer visszajelzést ad a hibás értékekről
+- A frontend a trigger visszajelzéseket vizuálisan jelzi, de nem blokkolja a mentést
+
+| Esemény | Trigger viselkedés |
+|---|---|
+| Tankolás km érték nélkül | Rekord bekerül, warning flag |
+| Negatív literérték | Rekord bekerül, warning log |
+| Hiányzó gépkezelő | Bekerül, jelzés a felületen |
+| Tartály túltöltés | Bekerül, figyelmeztető üzenet |
+
+---
+
+### DAY 3 – Indexek, Triggerek, View-k
+
+**Indexek**
+
+- Fact táblákon: `datum_id` (időszakos szűrés), `ervenyes` (audit), összetett `tartaly_id + datum_id` (tartályonkénti riport)
+- `ua_fact_keszlet_kiadas`: `eszkoz_sk` külön index (járműtörténet)
+- `ua_fact_keszlet_mozgas`: forrás és cél tartály külön összetett index (kétirányú lekérdezés)
+
+**Triggerek**
+
+| Trigger | Fő validáció |
+|---|---|
+| `trg_bevet_validate` | záró − kezdő = bejövő (±0,5 L), kapacitás limit |
+| `trg_kiadas_validate` | üzemóra/km sorrend, eszközönkénti km visszaesés detekció |
+| `trg_mozgas_validate` | pisztoly óraállás vs mozgatott liter, forrás tartály egyenleg, anyag egyezés |
+
+**View-k**
+
+| View | Tartalom |
+|---|---|
+| `vw_tartaly_egyenleg` | tartályonkénti aktuális készlet, kapacitás, lokáció |
+| `vw_eszkoz_utolso_allapot` | járművenként utolsó km és üzemóra állás |
+| `vw_napi_kiadasok` | napi aggregált kiadások tartály/anyag bontásban |
+| `vw_hibas_rekordok` | mind 3 fact táblából flagelt rekordok egységes formátumban |
+| `vw_bevet_szallitokent` | szállítónkénti bevételek súlyozott átlagárral |
+
+---
+
+### DAY 4 – Python FastAPI integráció
+
+```cmd
+pip install fastapi uvicorn mysql-connector-python
+cd /d C:\projektek\debarro\DEBARRO-PYTHON
+uvicorn main:app --reload
+```
+
+- `database.py` – MySQL kapcsolat, `mysql-connector-python`
+- `main.py` – endpointok
+- A `--reload` flag fejlesztés közben automatikusan újraindítja a szervert
+
+`Stack: + FastAPI`
+
+---
+
+### DAY 5 – Dim táblák GET endpointjai & POST endpointok
+
+**GET endpointok**
+
+| Endpoint | Tábla |
+|---|---|
+| `GET /cegek` | `core_dim_ceg` |
+| `GET /tartaly` | `ua_dim_tartaly` |
+| `GET /jarmu` | `eszkoz_dim_jarmuvek` |
+| `GET /alkalmazott` | `core_dim_munkaero` |
+| `GET /lokacio` | `core_dim_lokacio` |
+| `GET /fogyoanyag` | `ua_dim_fogyoanyag` |
+
+**Dátum dimenzió**
+
+`core_dim_ido` táblát Python script tölti fel (`generate_dates.py`). A `datum_id` formátuma YYYYMMDD – klasszikus data warehouse konvenció.
+
+**POST endpointok response struktúra**
+
+```json
+{ "id": 1, "ervenyes": 1, "hiba_uzenet": null }
+```
+
+| `ervenyes` | `hiba_uzenet` | Jelentés |
+|---|---|---|
+| 1 | null | Sikeres, valid adat |
+| 0 | `"HIBA: ..."` | Trigger megakadályozta |
+| 1 | `"FIGYELMEZTETÉS: ..."` | Bekerült, de készlethiány van |
+
+> **Megjegyzés (Day 8 módosítás):** A kiadás trigger esetén a készlethiány mostantól HIBA (nem figyelmeztetés). A mozgás triggernél a 2%-os tűréshatáron belüli eltérés továbbra is csak figyelmeztetés marad.
+
+**Készlet számítás (valós idejű, triggerben)**
+
+```
+Aktuális készlet =
+    SUM(bevételezés.zaro_liter)
+  + SUM(beérkező mozgás)
+  − SUM(kimenő mozgás)
+  − SUM(kiadás.kiadott_liter)
+  [csak ervenyes = 1 sorok]
+```
+
+---
+
+### DAY 6 – Valós idejű készlet tábla & React frontend · 2026-05-10
+
+**Reggel – `ua_dim_keszlet` tábla**
+
+- Minden tartályhoz egy sor, a triggerek frissítik INSERT esetén
+- 2% tolerancia: 0–2% között FIGYELMEZTETÉS, 2% felett HIBA (készlet nem frissül)
+- Pisztoly óraállás átrakva `mozgas` → `kiadas` fact táblába
+
+**GitHub + dotenv**
+
+- Private repo létrehozva, projekt feltöltve
+- `database.py` átírva: jelszó `.env` fájlba, `.gitignore` beállítva
+
+**Délután – React frontend**
+
+```cmd
+npx create-react-app debarro-frontend
+cd debarro-frontend && npm start
+```
+
+CORS beállítás `main.py`-ban szükséges:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], ...)
+```
+
+`Stack: + React · Node.js · GitBash · dotenv`
+
+---
+
+### DAY 7 – Ant Design dark theme & formok véglegesítése
+
+**Reggel – frontend csiszolás**
+
+- Ant Design dark theme – lecserélve az alap React stílus
+- Ékezet fix – trigger hibaüzenetekből kivéve az ékezetes karakterek (MySQL UTF-8 enkódolási probléma)
+- Bevételezés form: automatikus készlet megjelenítés tartály választáskor, max kapacitás jelzés
+- Komponens átszervezés: `App.js` → váz, form-ok külön fájlokba (`Bevetelezesform.js`, `Kiadasform.js`, `Mozgasform.js`)
+
+**Tanulság – Disabled Input és Form adatok**
+
+React-ban különbség van a között amit megjelenítesz és amit elküldesz. `disabled` Input nem kerül bele a form adataiba.
+
+```javascript
+// ROSSZ
+anyag_megnevezes: values.anyag_megnevezes,
+
+// JÓ
+anyag_megnevezes: tartalyok.find(t => t.tartaly_szam === values.forras_tartaly_szam)?.anyag_megnevezes || "",
+```
+
+> Ökölszabály: Ha egy mező `disabled` vagy csak info célú → az értékét a payload-ban mindig külön add hozzá.
+
+**Délután – három form demo kész**
+
+- Kiadás form: automatikus km/üzemóra behúzás `eszkoz_dim_jarmuvek_allapot` táblából, dupla bevitel ellen védett
+
+> Technikai adósság: dim táblákba `aktiv` oszlop szükséges (megoldva Day 9-ben).
+
+---
+
+### DAY 8 – Kódellenőrzés, hibajavítások, előzmény nézet · 2026-05-18
+
+**Javítások**
+
+1. **`vw_tartaly_egyenleg` view** – háromféle hiba egyszerre:
+   - `zaro_liter` helyett `bejovo_liter` összegzendő
+   - `ua_fact_keszlet_mozgas` teljesen hiányzott a számításból
+   - Nem szűrt `ervenyes = TRUE` feltételre
+   - Javítás: `aktualis_liter` a `ua_dim_keszlet` táblából (trigger által karbantartott forrás)
+
+2. **`trg_kiadas_validate`** – készlethiány esetén mostantól HIBA (nem FIGYELMEZTETÉS), `ervenyes = FALSE`, `ua_dim_keszlet` soha nem mehet negatívba
+
+3. Trigger újratelepítés a változás után
+
+**Új oldal – Tranzakció-előzmények (`Tranzakciok.js`)**
+
+- Szűrők: tartály dropdown, dátum intervallum (alapértelmezés: utolsó 30 nap)
+- Három fül: Kiadások / Bevételezések / Mozgások
+- Állapot: zöld OK / sárga Figyelmeztetés / piros Hibás
+- Lapozás 20 soronként, max 500 sor/kérés
+
+**Új API endpointok:**
+
+```
+GET /tranzakciok/kiadas?tartaly_id=&datum_tol=&datum_ig=
+GET /tranzakciok/bevet?tartaly_id=&datum_tol=&datum_ig=
+GET /tranzakciok/mozgas?tartaly_id=&datum_tol=&datum_ig=
+```
+
+**`start_debarro.bat`** – dupla kattintásra két CMD ablak: FastAPI + React.
+
+---
+
+### DAY 9 – Törzsadat-kezelés (`Torzsadatok.js`) · 2026-05-20
+
+**Alapelv:** ID-k soha nem törlődnek – csak AKTÍV / INAKTÍV állapot között válthatók.
+
+**Adatbázis módosítások**
+
+```sql
+ALTER TABLE core_dim_ceg      ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV';
+ALTER TABLE core_dim_lokacio  ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV';
+ALTER TABLE ua_dim_fogyoanyag ADD COLUMN allapot VARCHAR(20) NOT NULL DEFAULT 'AKTÍV';
+```
+
+**Kezelt törzsadatok**
+
+| Tábla | Mezők |
+|---|---|
+| `core_dim_munkaero` | név, foglalkoztatás típusa, foglalkoztató cég, munkaóra |
+| `eszkoz_dim_jarmuvek` | rendszám, belső ID, kategória, De Barro csop., gyártmány, típus, üzemanyag, alvázszám |
+| `ua_dim_tartaly` | tartályszám, típus (FIX/MOBIL/KANNA), kapacitás, anyag (FK), lokáció (FK) |
+| `core_dim_ceg` | cég neve, tulajdonos neve, kapcsolattartó |
+| `core_dim_lokacio` | lokáció neve, helyrajzi szám, GPS koordináták |
+| `ua_dim_fogyoanyag` | megnevezés, kategória, tulajdonos cég (FK) |
+
+**API bővítések**
+
+```
+GET  /torzsadat/{entity}            – teljes listázás JOIN-okkal (6 db)
+POST /{entity}                      – új rekord
+PATCH /{entity}/{id}                – teljes rekord szerkesztése (6 db)
+PATCH /{entity}/{id}/allapot        – csak állapotváltás
+```
+
+Érintett fájlok: `schema.sql` (3 ALTER), `main.py` (13 új endpoint), `Torzsadatok.js`, `Torzsadatok.css`
+
+---
+
+### DAY 10 – Naming convention refaktor & schema tagolás · 2026-05-21
+
+**Prefix-alapú naming convention bevezetése**
+
+Egy monolitikus schema helyett moduláris fájltagolás (ld. Architektúra fent).
+
+- `ALTER TABLE`-ek kiváltva tiszta `CREATE`-ekkel (még nincs éles adat)
+- VS Code Replace in Files a tömeges átnevezéshez
+- `drop.sql` frissítve, `FOREIGN_KEY_CHECKS = 0` technika dokumentálva
+
+**Tanulságok**
+
+- Replace All futtatásakor figyelni a sorrendre és a preview-ra – prefix duplikáció könnyen keletkezik (`ua_ua_`, `core_core_`)
+- MySQL kommentekben a `---` elválasztók szintaxis hibát okoznak, csak `--` használható
+
+---
+
+### DAY 11 – Moduláris frontend struktúra & auth alapok · 2026-05-27
+
+**React Router DOM bevezetése** – state-alapú navigáció lecserélve URL-alapú routingra
+
+**URL struktúra**
+
+```
+/                          → modul választó főoldal
+/uzemanyag                 → UA dashboard
+/uzemanyag/kiadas
+/uzemanyag/mozgas
+/uzemanyag/bevet
+/uzemanyag/elozmeny
+/admin/torzsadatok
+```
+
+**ModulValaszto főoldal** – négy modul kártya:
+
+| Modul | Útvonal | Állapot |
+|---|---|---|
+| ÜZEMANYAG | `/uzemanyag` | aktív (narancssárga) |
+| HUMÁN | `/hr` | hamarosan |
+| PÉNZÜGY | `/penzugy` | hamarosan |
+| ADMIN | `/admin` | aktív |
+
+**Auth alapok – DB oldal**
+
+```sql
+-- szerepkorok: szerepkor, modul, tier (pl. UA_1, HR_2, ADMIN_1)
+-- users: username, password_hash (bcrypt), szerepkor_id FK, allapot soft delete
+-- Seed: 9 szerepkör, 2 tesztuser
+```
+
+**Következő lépések**
+
+- `auth.py` – JWT token generálás, verify, FastAPI `Depends()`
+- `POST /login` – bcrypt ellenőrzés, token visszaad
+- `LoginPage.js` – React bejelentkezési felület
+- Protected route wrapper – token nélkül → redirect `/login`
+
+`Stack: MySQL 8.4 · Python 3.12 · FastAPI · React · React Router DOM · Ant Design · VS Code`

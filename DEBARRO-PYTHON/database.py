@@ -1,8 +1,9 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv("validate.env")
+load_dotenv(Path(__file__).parent / "validate.env")
 
 def get_connection():
     conn = mysql.connector.connect(
