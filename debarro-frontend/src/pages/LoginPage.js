@@ -1,44 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Alert, Button, Input } from "antd";
+import Lottie from "lottie-react";
 import { API } from "../api";
+import constructionAnimation from "../assets/construction3.json";
+import "./LoginPage.css";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`${API}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         setError(data.detail);
         return;
       }
-      
+
       localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify({
-        username: data.username,
-        nev: data.nev,
-        szerepkor: data.szerepkor,
-        modul: data.modul,
-        tier: data.tier
-      }));
-      
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          username: data.username,
+          nev: data.nev,
+          szerepkor: data.szerepkor,
+          modul: data.modul,
+          tier: data.tier,
+        })
+      );
+
       navigate("/");
-      
     } finally {
       setLoading(false);
     }
@@ -46,36 +52,67 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        
-        <div className="login-header">
-          <span>🏗️</span>
-          <h2>De Barro</h2>
-          <p>Vállaltirányítási rendszer</p>
+      <div className="login-left">
+        <div className="login-brand">
+          <span className="login-brand-icon">🏗️</span>
+          <h1 className="login-brand-title">De Barro Kft.</h1>
+          <p className="login-brand-subtitle">Vállalatirányítási Rendszer</p>
         </div>
+         <div className="login-lottie-wrap">
+          <Lottie animationData={constructionAnimation} loop={true} />
+        </div>
+      </div>
 
-        {error && (
-          <div className="login-error">{error}</div>
-        )}
+      <div className="login-right">
+        <div className="login-card">
+          <div className="login-card-header">
+            <h2 className="login-card-title">Bejelentkezés</h2>
+          </div>
 
-        <input
-          type="text"
-          placeholder="Felhasználónév"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-        />
-        
-        <input
-          type="password"
-          placeholder="Jelszó"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-        />
+          <div className="login-form">
+            {error && (
+              <Alert
+                type="error"
+                message={error}
+                showIcon
+                className="login-alert"
+              />
+            )}
 
-        <button onClick={handleLogin} disabled={loading}>
-          {loading ? "Bejelentkezés..." : "Belépés"}
-        </button>
+            <div className="login-field">
+              <label className="login-label">Felhasználónév</label>
+              <Input
+                size="large"
+                placeholder="Felhasználónév"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onPressEnter={handleLogin}
+              />
+            </div>
 
+            <div className="login-field">
+              <label className="login-label">Jelszó</label>
+              <Input.Password
+                size="large"
+                placeholder="Jelszó"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onPressEnter={handleLogin}
+              />
+            </div>
+
+            <Button
+              type="primary"
+              size="large"
+              block
+              loading={loading}
+              onClick={handleLogin}
+              className="login-btn"
+            >
+              {!loading && "Belépés"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

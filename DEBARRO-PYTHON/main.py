@@ -980,7 +980,7 @@ def login(request: LoginRequest):
 
 # Csak UA modul, bármely tier
 @app.post("/keszlet-kiadas")
-def post_kiadas(adat: KeszletKiadas, current_user = Depends(require_role(["UZEMANYAG"], max_tier=3))):
+def post_kiadas(adat: KiadasAdat, current_user = Depends(require_role(["UZEMANYAG"], max_tier=3))):
     ...
 
 # Csak UA modul, tier 1-2 (tier 3 nem írhat)

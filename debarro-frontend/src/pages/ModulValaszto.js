@@ -54,7 +54,10 @@ function ModulValaszto() {
             <span className="modul-header-sub">Válassz modult</span>
           </div>
         </div>
-        <div className="modul-header-user">👤 {user?.nev || "Admin"} <button onClick={handleLogout}>Kilépés</button></div>
+        <div className="modul-header-right">
+          <span className="modul-header-user">👤 {user?.nev || "Admin"}</span>
+          <button className="modul-logout-btn" onClick={handleLogout}>Kilépés</button>
+        </div>
       </header>
 
       <main className="modul-grid-wrapper">
